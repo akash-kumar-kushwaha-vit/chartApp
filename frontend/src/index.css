@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #646cff;
+  --color-brand-hover: #535bf2;
+}
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  background-color: #f9fafb; /* light gray bg */
+  color: #111827; /* dark text */
+}
+
+.dark {
+  background-color: #111827; /* dark bg */
+  color: #f9fafb; /* light text */
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
