@@ -1,13 +1,49 @@
 import { useEffect, useRef } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
-import { Loader2, User, ArrowLeft } from "lucide-react";
+import { useSocketStore } from "../store/useSocketStore";
+import { Loader2, User, ArrowLeft, FileText, Download } from "lucide-react";
 import MessageInput from "./MessageInput";
+
+const TypingBubble = () => (
+  <div className="flex justify-start">
+    <div className="flex flex-col items-start max-w-[75%]">
+      <div className="px-4 py-3 rounded-2xl rounded-bl-sm bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
+        <div className="flex items-center gap-1">
+          <span
+            className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+            style={{ animationDelay: "0ms" }}
+          />
+          <span
+            className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+            style={{ animationDelay: "150ms" }}
+          />
+          <span
+            className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
+            style={{ animationDelay: "300ms" }}
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 const ChatWindow = () => {
   const { messages, getMessages, isMessagesLoading, selectedUser, setSelectedUser } = useChatStore();
   const { authUser } = useAuthStore();
+  const { onlineUsers, typingUserId } = useSocketStore();
   const messageEndRef = useRef(null);
+
+  const getDownloadUrl = (url) => {
+    if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+      // Add fl_attachment to force download for PDFs/generic files to bypass Cloudinary's 401 view restriction
+      return url.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return url;
+  };
+
+  const isOnline = onlineUsers.includes(selectedUser._id);
+  const isTyping = typingUserId === selectedUser._id;
 
   useEffect(() => {
     if (selectedUser) {
@@ -16,10 +52,10 @@ const ChatWindow = () => {
   }, [selectedUser._id, getMessages]);
 
   useEffect(() => {
-    if (messageEndRef.current && messages) {
+    if (messageEndRef.current && (messages || isTyping)) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, isTyping]);
 
   const renderMessageTime = (dateString) => {
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -44,11 +80,19 @@ const ChatWindow = () => {
                 <User className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               </div>
             )}
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></span>
+            {isOnline && (
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
+            )}
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white leading-tight">{selectedUser.fullName}</h3>
-            <p className="text-xs text-green-500 font-medium">Online</p>
+            {isTyping ? (
+              <p className="text-xs text-indigo-500 font-medium animate-pulse">typing...</p>
+            ) : isOnline ? (
+              <p className="text-xs text-green-500 font-medium">Online</p>
+            ) : (
+              <p className="text-xs text-gray-400 font-medium">Offline</p>
+            )}
           </div>
         </div>
       </div>
@@ -78,6 +122,40 @@ const ChatWindow = () => {
                     />
                   )}
 
+                  {message.video && (
+                    <video
+                      src={message.video}
+                      controls
+                      className={`max-w-[260px] sm:max-w-[300px] rounded-xl mb-1 border border-gray-200 dark:border-gray-700 ${isMe ? "rounded-br-sm" : "rounded-bl-sm"}`}
+                    />
+                  )}
+
+                  {message.fileUrl && (
+                    <a
+                      href={getDownloadUrl(message.fileUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={message.fileName || "Attachment"}
+                      className={`flex items-center gap-3 p-3 max-w-[260px] sm:max-w-[300px] rounded-xl mb-1 border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-90 transition-opacity ${
+                        isMe 
+                          ? "bg-indigo-600/80 text-white rounded-br-sm" 
+                          : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-sm"
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg shrink-0 ${isMe ? "bg-white/20" : "bg-indigo-100 dark:bg-indigo-800"}`}>
+                        <FileText className={`w-6 h-6 ${isMe ? "text-white" : "text-indigo-600 dark:text-indigo-300"}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {message.fileName || "Attachment"}
+                        </p>
+                        <p className={`text-xs mt-0.5 flex items-center gap-1 ${isMe ? "text-indigo-100" : "text-gray-500 dark:text-gray-400"}`}>
+                          <Download className="w-3 h-3" /> Download
+                        </p>
+                      </div>
+                    </a>
+                  )}
+
                   {message.text && (
                     <div
                       className={`px-4 py-2.5 rounded-2xl shadow-sm text-sm ${
@@ -97,7 +175,11 @@ const ChatWindow = () => {
             );
           })
         )}
-        <div ref={messageEndRef}></div>
+
+        {/* Typing bubble */}
+        {isTyping && <TypingBubble />}
+
+        <div ref={messageEndRef} />
       </div>
 
       {/* Input Field */}

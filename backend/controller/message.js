@@ -24,40 +24,64 @@ export const getMessages = asyncHandler(async (req, res) => {
 });
 
 export const sendMessage = asyncHandler(async (req, res) => {
-    try {
-        const { text } = req.body;
-        const { id: receiverId } = req.params;
-        const senderId = req.user._id;
+    const { text } = req.body;
+    const { id: receiverId } = req.params;
+    const senderId = req.user._id;
 
-        // Check if an image is sent along with the message
-        let imageUrl = null;
-        if (req.file) {
-            // we will use multer to upload image to our server temporarily, then to cloudinary
-            const response = await uplodcloudinary(req.file.path);
-            if(response) {
-                imageUrl = response.url;
-            }
+    // Handle image upload
+    let imageUrl = null;
+    if (req.files && req.files.image && req.files.image[0]) {
+        const response = await uplodcloudinary(req.files.image[0].path, "image");
+        if (response) {
+            imageUrl = response.url;
+        } else {
+            throw new ApiError(500, "Failed to upload image");
         }
-
-        if (!text && !imageUrl) {
-            throw new ApiError(400, "A message must have text or an image");
-        }
-
-        const newMessage = await Message.create({
-            senderId,
-            receiverId,
-            text: text || "",
-            image: imageUrl,
-        });
-
-        const receiverSocketId = getReceiverSocketId(receiverId);
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit("newMessage", newMessage);
-        }
-
-        res.status(201).json(new ApiResponse(201, newMessage, "Message sent successfully"));
-
-    } catch (error) {
-        throw new ApiError(500, error.message || "Error in sendMessage controller");
     }
+
+    // Handle video upload
+    let videoUrl = null;
+    if (req.files && req.files.video && req.files.video[0]) {
+        const response = await uplodcloudinary(req.files.video[0].path, "video");
+        if (response) {
+            videoUrl = response.url;
+        } else {
+            throw new ApiError(500, "Failed to upload video");
+        }
+    }
+
+    // Handle file upload
+    let fileUrl = null;
+    let fileName = null;
+    if (req.files && req.files.file && req.files.file[0]) {
+        const response = await uplodcloudinary(req.files.file[0].path, "auto");
+        if (response) {
+            fileUrl = response.url;
+            fileName = req.files.file[0].originalname;
+        } else {
+            throw new ApiError(500, "Failed to upload file");
+        }
+    }
+
+    if (!text && !imageUrl && !videoUrl && !fileUrl) {
+        throw new ApiError(400, "A message must have text, an image, a video, or a file");
+    }
+
+    const newMessage = await Message.create({
+        senderId,
+        receiverId,
+        text: text || "",
+        image: imageUrl,
+        video: videoUrl,
+        fileUrl: fileUrl,
+        fileName: fileName,
+    });
+
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+        io.to(receiverSocketId).emit("newMessage", newMessage);
+    }
+
+    res.status(201).json(new ApiResponse(201, newMessage, "Message sent successfully"));
 });
+

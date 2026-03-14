@@ -21,6 +21,19 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  addContact: async (query) => {
+    try {
+      const res = await axiosInstance.post("/auth/users/add-contact", { query });
+      const newContact = res.data.data;
+      set({ users: [...get().users, newContact] });
+      toast.success(`${newContact.fullName} added to contacts!`);
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to add contact");
+      return false;
+    }
+  },
+
   getMessages: async (userId) => {
     set({ isMessagesLoading: true });
     try {
@@ -45,3 +58,4 @@ export const useChatStore = create((set, get) => ({
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),
 }));
+

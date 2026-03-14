@@ -7,6 +7,7 @@ export const useAuthStore = create((set, get) => ({
   isCheckingAuth: true,
   isLoggingIn: false,
   isSigningUp: false,
+  isUpdatingProfile: false,
 
   googleLogin: async (credential) => {
     set({ isLoggingIn: true });
@@ -92,6 +93,23 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Logged out successfully");
     } catch (error) {
       toast.error(error.response?.data?.message || "Error logging out");
+    }
+  },
+
+  updateProfile: async (data) => {
+    set({ isUpdatingProfile: true });
+    try {
+      const res = await axiosInstance.put("/auth/profile/update", data);
+      const updatedUser = { ...get().authUser, ...res.data.data };
+      localStorage.setItem("chat-user", JSON.stringify(updatedUser));
+      set({ authUser: updatedUser });
+      toast.success("Profile updated successfully!");
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update profile");
+      return false;
+    } finally {
+      set({ isUpdatingProfile: false });
     }
   },
 }));

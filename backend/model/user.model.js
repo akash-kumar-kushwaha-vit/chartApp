@@ -28,6 +28,15 @@ const userSchema = new mongoose.Schema({
     avtar: {
         type: String,//cloudnary 
     },
+    status: {
+        type: String,
+        default: "",
+        maxlength: 150,
+    },
+    contacts: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+    }],
     videos: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Video",

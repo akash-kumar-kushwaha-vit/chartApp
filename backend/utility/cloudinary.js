@@ -7,10 +7,14 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
-const uplodcloudinary = async (localfile) => {
+const uplodcloudinary = async (localfile, resourceType = "auto") => {
     try {
         const response = await cloudinary.uploader.upload(localfile, {
-            resource_type: "auto"
+            resource_type: resourceType,
+            type: "upload",
+            // For raw files, add an attachment flag if possible
+            // Note: Cloudinary restricts viewing raw files by default for security, 
+            // you might need to use `fl_attachment` in the URL or set it during upload
         })
         console.log("File uploaded successfully:", response.url)
         fs.unlinkSync(localfile)

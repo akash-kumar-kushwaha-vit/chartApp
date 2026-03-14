@@ -8,6 +8,7 @@ const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:4000
 export const useSocketStore = create((set, get) => ({
   socket: null,
   onlineUsers: [],
+  typingUserId: null, // ID of the user who is currently typing to us
 
   connectSocket: () => {
     const { authUser } = useAuthStore.getState();
@@ -34,10 +35,22 @@ export const useSocketStore = create((set, get) => ({
       }
     });
 
+    // Typing events from the server
+    socket.on("typing", ({ senderId }) => {
+      set({ typingUserId: senderId });
+    });
+
+    socket.on("stopTyping", ({ senderId }) => {
+      // Only clear if the person who stopped typing is the same one who was shown
+      if (get().typingUserId === senderId) {
+        set({ typingUserId: null });
+      }
+    });
   },
   
   disconnectSocket: () => {
     if (get().socket?.connected) get().socket.disconnect();
-    set({ socket: null });
+    set({ socket: null, typingUserId: null });
   },
 }));
+

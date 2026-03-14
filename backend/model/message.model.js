@@ -21,6 +21,12 @@ const messageSchema = new mongoose.Schema(
         video: {
             type: String
         },
+        fileUrl: {
+            type: String
+        },
+        fileName: {
+            type: String
+        },
         seen: {
             type: Boolean,
             default: false,
