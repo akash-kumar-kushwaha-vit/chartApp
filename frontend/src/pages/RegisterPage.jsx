@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, User, Loader2 } from "lucide-react";
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
@@ -14,10 +14,11 @@ const RegisterPage = () => {
   });
   
   const { signup, isSigningUp } = useAuthStore();
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    signup(formData);
+    signup(formData, navigate);
   };
 
   return (

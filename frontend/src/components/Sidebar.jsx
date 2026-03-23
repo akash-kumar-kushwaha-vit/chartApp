@@ -1,20 +1,25 @@
 import { useEffect, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useSocketStore } from "../store/useSocketStore";
-import { Loader2, Search, User, UserPlus, X } from "lucide-react";
+import { Loader2, Search, User, UserPlus, Users, X } from "lucide-react";
+import CreateGroupModal from "./CreateGroupModal";
 
 const Sidebar = () => {
-  const { users, getUsers, selectedUser, setSelectedUser, isUsersLoading, addContact } = useChatStore();
+  const { users, getUsers, selectedUser, setSelectedUser, isUsersLoading, addContact, unreadCounts } = useChatStore();
   const { onlineUsers } = useSocketStore();
 
   const [showAddContact, setShowAddContact] = useState(false);
   const [contactQuery, setContactQuery] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
 
   useEffect(() => {
-    getUsers();
-  }, [getUsers]);
+    const timer = setTimeout(() => {
+      getUsers(searchFilter);
+    }, 400); // Debounce search
+    return () => clearTimeout(timer);
+  }, [searchFilter, getUsers]);
 
   const handleAddContact = async (e) => {
     e.preventDefault();
@@ -28,10 +33,7 @@ const Sidebar = () => {
     }
   };
 
-  const filteredUsers = users.filter((u) =>
-    u.fullName.toLowerCase().includes(searchFilter.toLowerCase()) ||
-    u.username.toLowerCase().includes(searchFilter.toLowerCase())
-  );
+  // Local filtering removed: `users` array is now filtered globally via backend API
 
   if (isUsersLoading) {
     return (
@@ -57,7 +59,18 @@ const Sidebar = () => {
             />
           </div>
           <button
-            onClick={() => setShowAddContact((v) => !v)}
+            onClick={() => { setShowCreateGroup((v) => !v); setShowAddContact(false); }}
+            title="Create group"
+            className={`p-2 rounded-xl transition-colors flex-shrink-0 ${
+              showCreateGroup
+                ? "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400"
+                : "text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800"
+            }`}
+          >
+            <Users className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => { setShowAddContact((v) => !v); setShowCreateGroup(false); }}
             title="Add contact"
             className={`p-2 rounded-xl transition-colors flex-shrink-0 ${
               showAddContact
@@ -68,6 +81,14 @@ const Sidebar = () => {
             <UserPlus className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Create Group Modal */}
+        {showCreateGroup && (
+          <CreateGroupModal onClose={(newGroup) => {
+            setShowCreateGroup(false);
+            if (newGroup) setSelectedUser(newGroup);
+          }} />
+        )}
 
         {/* Add Contact Form */}
         {showAddContact && (
@@ -100,10 +121,10 @@ const Sidebar = () => {
 
       {/* Contacts List */}
       <div className="flex-1 overflow-y-auto w-full pt-2 px-3">
-        {filteredUsers.length === 0 ? (
+        {users.length === 0 ? (
           <div className="text-center text-gray-500 py-8 text-sm space-y-2">
-            <p>{users.length === 0 ? "No contacts yet." : "No contacts match your search."}</p>
-            {users.length === 0 && (
+            <p>{searchFilter ? "No users found globally." : "No contacts yet."}</p>
+            {!searchFilter && (
               <button
                 onClick={() => setShowAddContact(true)}
                 className="text-indigo-500 hover:underline text-xs"
@@ -113,7 +134,7 @@ const Sidebar = () => {
             )}
           </div>
         ) : (
-          filteredUsers.map((user) => (
+          users.map((user) => (
             <button
               key={user._id}
               onClick={() => setSelectedUser(user)}
@@ -128,10 +149,10 @@ const Sidebar = () => {
                   <img src={user.avtar} alt={user.username} className="w-12 h-12 rounded-full object-cover" />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center flex-shrink-0">
-                    <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                    {user.isGroup ? <Users className="w-6 h-6 text-indigo-600 dark:text-indigo-400" /> : <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />}
                   </div>
                 )}
-                {onlineUsers.includes(user._id) && (
+                {!user.isGroup && onlineUsers.includes(user._id) && (
                   <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
                 )}
               </div>
@@ -144,6 +165,13 @@ const Sidebar = () => {
                   @{user.username}
                 </div>
               </div>
+
+              {/* Unread Badge */}
+              {unreadCounts[user._id] > 0 && selectedUser?._id !== user._id && (
+                <div className="ml-auto min-w-[20px] h-5 px-1.5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-[10px] text-white font-bold leading-none">{unreadCounts[user._id]}</span>
+                </div>
+              )}
             </button>
           ))
         )}

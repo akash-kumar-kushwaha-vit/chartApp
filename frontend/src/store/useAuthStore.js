@@ -7,6 +7,7 @@ export const useAuthStore = create((set, get) => ({
   isCheckingAuth: true,
   isLoggingIn: false,
   isSigningUp: false,
+  isVerifyingEmail: false,
   isUpdatingProfile: false,
 
   googleLogin: async (credential) => {
@@ -47,17 +48,32 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  signup: async (data) => {
+  signup: async (data, navigate) => {
     set({ isSigningUp: true });
     try {
       const res = await axiosInstance.post("/auth/register", data);
-      // Backend automatically sets cookie? Wait, register doesn't set cookie in user.js controller, only login does!
-      // So we should redirect to login OR call login immediately after
-      toast.success("Account created successfully! Please log in.");
+      toast.success("Account created successfully! Please verify your email.");
+      if (navigate) navigate("/verify-email", { state: { email: data.email } });
+      return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Error creating account");
+      return false;
     } finally {
       set({ isSigningUp: false });
+    }
+  },
+
+  verifyEmail: async (data) => {
+    set({ isVerifyingEmail: true });
+    try {
+      const res = await axiosInstance.post("/auth/verify-email", data);
+      toast.success("Email verified successfully! You can now log in.");
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Invalid or expired verification code");
+      return false;
+    } finally {
+      set({ isVerifyingEmail: false });
     }
   },
 

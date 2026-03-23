@@ -8,6 +8,7 @@ import Navbar from "./components/Navbar";
 import ChatDashboard from "./pages/ChatDashboard";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 
 function App() {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -37,6 +38,7 @@ function App() {
           <Route path="/" element={authUser ? <ChatDashboard /> : <Navigate to="/login" />} />
           <Route path="/register" element={!authUser ? <RegisterPage /> : <Navigate to="/" />} />
           <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
         </Routes>
         <Toaster />
       </div>

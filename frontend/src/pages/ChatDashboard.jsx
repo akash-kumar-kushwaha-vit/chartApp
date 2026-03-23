@@ -1,9 +1,17 @@
+import { useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import ChatWindow from "../components/ChatWindow";
 import { useChatStore } from "../store/useChatStore";
 
 const ChatDashboard = () => {
-  const { selectedUser } = useChatStore();
+  const { selectedUser, getUnreadCounts } = useChatStore();
+
+  useEffect(() => {
+    getUnreadCounts();
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, [getUnreadCounts]);
 
   return (
     <div className="h-[calc(100vh-4rem)] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

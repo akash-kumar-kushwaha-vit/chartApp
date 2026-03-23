@@ -14,8 +14,20 @@ app.use(cookieparser())
 // import routers
 import userRouter from './route/user.js';
 import messageRouter from './route/message.js';
+import groupRouter from './route/group.route.js';
 
 app.use("/api/auth", userRouter); // I am renaming to /api/auth as standard
 app.use("/api/messages", messageRouter);
+app.use("/api/groups", groupRouter);
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    const statusCode = err.statusCode || 500;
+    res.status(statusCode).json({
+        success: false,
+        message: err.message || "Internal Server Error",
+        errors: err.errors || []
+    });
+});
 
 export { app };

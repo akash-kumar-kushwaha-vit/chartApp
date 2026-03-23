@@ -1,6 +1,8 @@
 import { Server } from "socket.io";
+import { Group } from "../model/group.model.js";
 import http from "http";
 import express from "express";
+import mongoose from "mongoose";
 
 const app = express();
 
@@ -22,23 +24,45 @@ io.on("connection", (socket) => {
   console.log("a user connected", socket.id);
 
   const userId = socket.handshake.query.userId;
-  if (userId != "undefined") userSocketMap[userId] = socket.id;
+  if (userId != "undefined") {
+    userSocketMap[userId] = socket.id;
 
-  // io.emit() is used to send events to all the connected clients
+    // Join all groups this user is a member of
+    Group.find({ members: new mongoose.Types.ObjectId(userId) }).then(groups => {
+      groups.forEach(group => {
+        socket.join(group._id.toString());
+      });
+    }).catch(err => console.error("Error joining group rooms:", err));
+  }
+
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-  // Relay typing events to the specific receiver
-  socket.on("typing", ({ receiverId }) => {
-    const receiverSocketId = userSocketMap[receiverId];
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("typing", { senderId: userId });
+  // Dynamic explicit group join (e.g., just created or added to a group)
+  socket.on("joinGroup", (groupId) => {
+    socket.join(groupId);
+  });
+
+  // Relay typing events
+  socket.on("typing", ({ receiverId, isGroup }) => {
+    if (isGroup) {
+      // Broadcast to room members except sender
+      socket.to(receiverId).emit("typing", { senderId: userId });
+    } else {
+      const receiverSocketId = userSocketMap[receiverId];
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("typing", { senderId: userId });
+      }
     }
   });
 
-  socket.on("stopTyping", ({ receiverId }) => {
-    const receiverSocketId = userSocketMap[receiverId];
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("stopTyping", { senderId: userId });
+  socket.on("stopTyping", ({ receiverId, isGroup }) => {
+    if (isGroup) {
+      socket.to(receiverId).emit("stopTyping", { senderId: userId });
+    } else {
+      const receiverSocketId = userSocketMap[receiverId];
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("stopTyping", { senderId: userId });
+      }
     }
   });
 

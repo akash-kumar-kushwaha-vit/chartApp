@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getMessages, sendMessage } from "../controller/message.js";
+import { getMessages, sendMessage, editMessage, deleteMessage, reactToMessage, markMessagesAsRead, getUnreadCounts } from "../controller/message.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 import multer from "multer";
 
@@ -17,8 +17,12 @@ export const upload = multer({ storage: storage })
 const messageRouter = Router();
 
 messageRouter.route('/:id').get(verifyJWT, getMessages)
-// Accept 'image', 'video', and 'file' file fields
-messageRouter.route('/send/:id').post(verifyJWT, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }, { name: 'file', maxCount: 1 }]), sendMessage)
+messageRouter.route('/send/:id').post(verifyJWT, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }, { name: 'file', maxCount: 1 }, { name: 'audio', maxCount: 1 }]), sendMessage)
+messageRouter.route('/edit/:id').put(verifyJWT, editMessage)
+messageRouter.route('/delete/:id').delete(verifyJWT, deleteMessage)
+messageRouter.route('/react/:id').post(verifyJWT, reactToMessage)
+messageRouter.route('/mark-read/:id').post(verifyJWT, markMessagesAsRead)
+messageRouter.route('/unread-counts').get(verifyJWT, getUnreadCounts)
 
 export default messageRouter;
 
