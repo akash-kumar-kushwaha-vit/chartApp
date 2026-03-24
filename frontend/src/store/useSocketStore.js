@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { io } from "socket.io-client";
 import { useAuthStore } from "./useAuthStore";
 import { useChatStore } from "./useChatStore";
+import { useCallStore } from "./useCallStore";
 
 const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:4000" : "/";
 
@@ -21,6 +22,9 @@ export const useSocketStore = create((set, get) => ({
     });
     socket.connect();
     set({ socket });
+
+    // Initialize WebRTC Call Listeners
+    useCallStore.getState().initListeners();
 
     socket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });

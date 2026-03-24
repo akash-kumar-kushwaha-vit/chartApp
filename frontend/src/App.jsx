@@ -5,6 +5,7 @@ import { useThemeStore } from "./store/useThemeStore";
 import { Toaster } from "react-hot-toast";
 
 import Navbar from "./components/Navbar";
+import VideoCallManager from "./components/VideoCallManager";
 import ChatDashboard from "./pages/ChatDashboard";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -34,6 +35,7 @@ function App() {
     <BrowserRouter>
       <div className="min-h-screen transition-colors duration-200 bg-white dark:bg-gray-900 text-black dark:text-white">
         <Navbar />
+        <VideoCallManager />
         <Routes>
           <Route path="/" element={authUser ? <ChatDashboard /> : <Navigate to="/login" />} />
           <Route path="/register" element={!authUser ? <RegisterPage /> : <Navigate to="/" />} />

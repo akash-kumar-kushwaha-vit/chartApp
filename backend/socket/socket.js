@@ -66,6 +66,35 @@ io.on("connection", (socket) => {
     }
   });
 
+  // --- WebRTC Video Calling Signaling ---
+  socket.on("callUser", ({ userToCall, offer, from, isVideoCall }) => {
+    const receiverSocketId = userSocketMap[userToCall];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("incomingCall", { from, offer, isVideoCall });
+    }
+  });
+
+  socket.on("answerCall", ({ to, answer }) => {
+    const callerSocketId = userSocketMap[to];
+    if (callerSocketId) {
+      io.to(callerSocketId).emit("callAccepted", { answer });
+    }
+  });
+
+  socket.on("iceCandidate", ({ to, candidate }) => {
+    const peerSocketId = userSocketMap[to];
+    if (peerSocketId) {
+      io.to(peerSocketId).emit("iceCandidate", { candidate });
+    }
+  });
+
+  socket.on("endCall", ({ to }) => {
+    const peerSocketId = userSocketMap[to];
+    if (peerSocketId) {
+      io.to(peerSocketId).emit("callEnded");
+    }
+  });
+
   // listen to events
   socket.on("disconnect", () => {
     console.log("user disconnected", socket.id);

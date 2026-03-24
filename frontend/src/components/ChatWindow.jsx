@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useSocketStore } from "../store/useSocketStore";
-import { Loader2, User, ArrowLeft, Search, X } from "lucide-react";
+import { useCallStore } from "../store/useCallStore";
+import { Loader2, User, ArrowLeft, Search, X, Video, Phone } from "lucide-react";
 import MessageInput from "./MessageInput";
 import MediaViewer from "./MediaViewer";
 import ProfileViewer from "./ProfileViewer";
@@ -34,6 +35,7 @@ const TypingBubble = () => (
 const ChatWindow = () => {
   const { messages, getMessages, isMessagesLoading, hasMoreMessages, selectedUser, setSelectedUser } = useChatStore();
   const { authUser } = useAuthStore();
+  const { callUser } = useCallStore();
   const { onlineUsers, typingUserId } = useSocketStore();
   const messageEndRef = useRef(null);
   const observerTarget = useRef(null);
@@ -170,9 +172,29 @@ const ChatWindow = () => {
                   )
                 )}
               </div>
+              
+              {!selectedUser.isGroup && (
+                <>
+                  <button 
+                    onClick={() => callUser(selectedUser, false)}
+                    className="p-2 text-gray-400 hover:text-green-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors ml-auto"
+                    title="Voice Call"
+                  >
+                    <Phone className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => callUser(selectedUser, true)}
+                    className="p-2 text-gray-400 hover:text-green-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                    title="Video Call"
+                  >
+                    <Video className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+              
               <button 
                 onClick={() => setShowSearch(true)} 
-                className="p-2 text-gray-400 hover:text-indigo-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors ml-auto"
+                className={`p-2 text-gray-400 hover:text-indigo-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors ${selectedUser.isGroup ? 'ml-auto' : ''}`}
                 title="Search Messages"
               >
                 <Search className="w-5 h-5" />

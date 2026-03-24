@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { SmilePlus, Reply, Edit2, Trash2, X, Check, CheckCheck, FileText, Download, ChevronDown, Mic } from "lucide-react";
 
-const renderMessageTime = (dateString, isEdited) => {
-  const time = new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const renderMessageTime = (dateString, isEdited, updatedAtString) => {
+  const targetDate = isEdited && updatedAtString ? updatedAtString : dateString;
+  const time = new Date(targetDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return isEdited ? `${time} (edited)` : time;
 };
 
@@ -235,7 +236,7 @@ const MessageItem = ({ message, isMe, authUser, selectedUser, setSelectedMedia, 
               {/* Time and Edited Tag */}
               <div className="flex justify-end items-center gap-1 mt-0.5 px-1 pb-0.5">
                 <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                  {renderMessageTime(message.createdAt, message.isEdited && !message.isDeleted)}
+                  {renderMessageTime(message.createdAt, message.isEdited && !message.isDeleted, message.updatedAt)}
                 </span>
                 {/* Read Receipts */}
                 {isMe && !isDeleted && (
