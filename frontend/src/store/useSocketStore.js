@@ -4,7 +4,7 @@ import { useAuthStore } from "./useAuthStore";
 import { useChatStore } from "./useChatStore";
 import { useCallStore } from "./useCallStore";
 
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:4000" : "/";
+const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:4000" : "https://helloapp-dcrh.onrender.com";
 
 export const useSocketStore = create((set, get) => ({
   socket: null,
