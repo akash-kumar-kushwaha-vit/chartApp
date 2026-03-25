@@ -89,7 +89,8 @@ const login = asyncHandler(async (req, res) => {
     const { accessToken, refreshToken } = await generateAccessTokenAndrefreshToken(existUser._id);
     const option = {
         httpOnly: true,
-        secure: true
+        secure: true,
+        sameSite: "none"
     }
 
     res.cookie("ACCESS_TOKEN", accessToken, option);
@@ -117,7 +118,8 @@ const logout = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: true,
+        sameSite: "none"
     }
 
     return res
@@ -244,7 +246,8 @@ const googleAuth = asyncHandler(async (req, res) => {
     const { accessToken, refreshToken } = await generateAccessTokenAndrefreshToken(user._id);
     const options = {
         httpOnly: true,
-        secure: true
+        secure: true,
+        sameSite: "none"
     };
 
     res.cookie("ACCESS_TOKEN", accessToken, options);
