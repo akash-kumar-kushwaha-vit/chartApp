@@ -103,7 +103,7 @@ const ChatWindow = () => {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md flex justify-between items-center sm:hidden md:flex shadow-sm">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <button 
             className="md:hidden p-2 -ml-2 text-gray-500"

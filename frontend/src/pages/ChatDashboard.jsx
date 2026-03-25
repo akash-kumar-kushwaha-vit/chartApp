@@ -14,11 +14,11 @@ const ChatDashboard = () => {
   }, [getUnreadCounts]);
 
   return (
-    <div className="h-[calc(100vh-4rem)] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl overflow-hidden h-full flex flex-col md:flex-row shadow-gray-200 dark:shadow-black/50 overflow-hidden">
+    <div className="h-[calc(100vh-4rem)] max-w-7xl mx-auto sm:px-6 lg:px-8 sm:py-6">
+      <div className="bg-white dark:bg-gray-900 sm:border border-gray-200 dark:border-gray-800 sm:rounded-2xl shadow-xl overflow-hidden h-full flex flex-col md:flex-row shadow-gray-200 dark:shadow-black/50">
         
         {/* Sidebar container - hides on mobile when a user is selected */}
-        <div className={`w-full md:w-80 border-r border-gray-200 dark:border-gray-800 flex-shrink-0 flex flex-col ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full md:w-80 border-r-0 md:border-r border-gray-200 dark:border-gray-800 flex-shrink-0 flex flex-col ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
           <Sidebar />
         </div>
 
