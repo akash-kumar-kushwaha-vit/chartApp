@@ -17,10 +17,14 @@ const uplodcloudinary = async (localfile, resourceType = "auto") => {
             // you might need to use `fl_attachment` in the URL or set it during upload
         })
         console.log("File uploaded successfully:", response.url)
-        fs.unlinkSync(localfile)
+        if (fs.existsSync(localfile)) {
+            fs.unlinkSync(localfile)
+        }
         return response
     } catch (error) {
-        fs.unlinkSync(localfile);
+        if (fs.existsSync(localfile)) {
+            fs.unlinkSync(localfile);
+        }
         console.error("Error uploading file:", error)
         return null
     }
