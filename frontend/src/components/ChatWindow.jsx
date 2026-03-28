@@ -3,7 +3,7 @@ import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useSocketStore } from "../store/useSocketStore";
 import { useCallStore } from "../store/useCallStore";
-import { Loader2, User, ArrowLeft, Search, X, Video, Phone } from "lucide-react";
+import { Loader2, User, ArrowLeft, Search, X, Video, Phone, Lock } from "lucide-react";
 import MessageInput from "./MessageInput";
 import MediaViewer from "./MediaViewer";
 import ProfileViewer from "./ProfileViewer";
@@ -101,9 +101,21 @@ const ChatWindow = () => {
   }, [messages, isTyping, skip]);
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
+    <div 
+      className="flex-1 flex flex-col h-full overflow-hidden relative"
+      style={authUser?.chatWallpaper ? {
+        backgroundImage: `url(${authUser.chatWallpaper})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      } : {}}
+    >
+      {/* Wallpaper overlay to guarantee text readability */}
+      {authUser?.chatWallpaper && (
+        <div className="absolute inset-0 bg-white/40 dark:bg-black/50 pointer-events-none z-0" />
+      )}
+
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md flex justify-between items-center shadow-sm">
+      <div className="relative z-10 p-4 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <button 
             className="md:hidden p-2 -ml-2 text-gray-500"
@@ -171,6 +183,11 @@ const ChatWindow = () => {
                     <p className="text-xs text-gray-400 font-medium">Offline</p>
                   )
                 )}
+                {!selectedUser.isGroup && selectedUser.publicKey && (
+                  <p className="text-[10px] text-emerald-500 font-medium flex items-center gap-0.5 leading-none mt-0.5">
+                    <Lock className="w-2.5 h-2.5" /> End-to-end encrypted
+                  </p>
+                )}
               </div>
               
               {!selectedUser.isGroup && (
@@ -205,7 +222,7 @@ const ChatWindow = () => {
       </div>
 
       {/* Messages Array */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 flex flex-col">
+      <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-6 flex flex-col">
         {hasMoreMessages && !isMessagesLoading && messages.length >= 50 && (
           <div ref={observerTarget} className="h-4 w-full flex-shrink-0" />
         )}
@@ -243,7 +260,9 @@ const ChatWindow = () => {
       </div>
 
       {/* Input Field */}
-      <MessageInput />
+      <div className="relative z-10">
+        <MessageInput />
+      </div>
 
       {/* Viewers */}
       <MediaViewer 

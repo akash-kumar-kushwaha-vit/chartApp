@@ -33,6 +33,14 @@ const userSchema = new mongoose.Schema({
         default: "",
         maxlength: 150,
     },
+    chatWallpaper: {
+        type: String,
+        default: "",
+    },
+    publicKey: {
+        type: String,
+        default: "",
+    },
     contacts: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",

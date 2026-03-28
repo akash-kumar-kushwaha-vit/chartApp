@@ -3,6 +3,7 @@ import { io } from "socket.io-client";
 import { useAuthStore } from "./useAuthStore";
 import { useChatStore } from "./useChatStore";
 import { useCallStore } from "./useCallStore";
+import { decryptMessageObjects } from "../lib/crypto";
 
 const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:4000" : "https://helloapp-dcrh.onrender.com";
 
@@ -42,31 +43,40 @@ export const useSocketStore = create((set, get) => ({
     socket.on("newMessage", (newMessage) => {
       const { selectedUser, messages, markMessagesAsRead, incrementUnreadCount } = useChatStore.getState();
       
-      // Determine if the incoming message belongs to the currently active chat window
-      // It belongs if: it's a group message and we are looking at that group, OR it's a DM and we are looking at the sender
       const senderString = newMessage.senderId?._id || newMessage.senderId;
       const isMessageForCurrentChat = selectedUser && (
         (newMessage.groupId && selectedUser._id === newMessage.groupId) || 
         (!newMessage.groupId && selectedUser._id === senderString)
       );
 
-      if (isMessageForCurrentChat) {
-        useChatStore.setState({ messages: [...messages, newMessage] });
-        
-        // Mark as read natively!
-        markMessagesAsRead(newMessage.groupId ? newMessage.groupId : senderString);
-      } else {
-        // We are not actively chatting with the sender/group, increment badge
-        const badgeId = newMessage.groupId ? newMessage.groupId : senderString;
-        incrementUnreadCount(badgeId);
-
-        // Fire Desktop Push Notification
-        if (Notification.permission === "granted") {
-          const title = newMessage.groupId ? "New Group Message" : "New Message";
-          const body = newMessage.text || "Sent an attachment";
-          new Notification(title, { body });
+      (async () => {
+        let decryptedMsg = newMessage;
+        if (newMessage.iv && newMessage.encryptionKeys?.length) {
+          const { authUser } = useAuthStore.getState();
+          const uid = authUser?._id || authUser?.id;
+          if (uid) {
+            try {
+              decryptedMsg = await decryptMessageObjects(newMessage, uid);
+            } catch (e) {
+              console.error("Socket message decrypt failed", e);
+            }
+          }
         }
-      }
+
+        if (isMessageForCurrentChat) {
+          useChatStore.setState({ messages: [...messages, decryptedMsg] });
+          markMessagesAsRead(newMessage.groupId ? newMessage.groupId : senderString);
+        } else {
+          const badgeId = newMessage.groupId ? newMessage.groupId : senderString;
+          incrementUnreadCount(badgeId);
+
+          if (Notification.permission === "granted") {
+            const title = newMessage.groupId ? "New Group Message" : "New Message";
+            const body = decryptedMsg.text || "Sent an attachment";
+            new Notification(title, { body });
+          }
+        }
+      })();
     });
 
     socket.on("messagesRead", ({ readerId }) => {

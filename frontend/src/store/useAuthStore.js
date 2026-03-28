@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { axiosInstance } from "../api/axios";
 import toast from "react-hot-toast";
 import { useSocketStore } from "./useSocketStore";
+import { generateAndStoreKeyPair, hasLocalPrivateKey } from "../lib/crypto";
+
 export const useAuthStore = create((set, get) => ({
   authUser: null,
   isCheckingAuth: true,
@@ -10,6 +12,26 @@ export const useAuthStore = create((set, get) => ({
   isVerifyingEmail: false,
   isUpdatingProfile: false,
 
+  ensureE2EEKeys: async (user) => {
+    if (!user || (!user._id && !user.id)) return;
+    const uid = user._id || user.id;
+    try {
+      const hasKey = await hasLocalPrivateKey(uid);
+      if (!hasKey) {
+        console.log("Generating new E2EE keypair for user", uid);
+        const publicKey = await generateAndStoreKeyPair(uid);
+        
+        await axiosInstance.put("/auth/profile/update", { publicKey });
+        
+        set((state) => ({
+          authUser: { ...state.authUser, publicKey }
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to ensure E2EE keys", e);
+    }
+  },
+
   googleLogin: async (credential) => {
     set({ isLoggingIn: true });
     try {
@@ -17,6 +39,7 @@ export const useAuthStore = create((set, get) => ({
       const userObj = { isAuthenticated: true, _id: res.data.data?.user?._id || "placeholder_id", ...res.data.data?.user };
       localStorage.setItem("chat-user", JSON.stringify(userObj));
       set({ authUser: userObj });
+      await get().ensureE2EEKeys(userObj);
       useSocketStore.getState().connectSocket();
       
       toast.success("Successfully logged in with Google");
@@ -34,6 +57,7 @@ export const useAuthStore = create((set, get) => ({
         // ping an endpoint to verify the cookie is still valid
         const res = await axiosInstance.get("/auth/users");
         set({ authUser: JSON.parse(user) });
+        await get().ensureE2EEKeys(JSON.parse(user));
         useSocketStore.getState().connectSocket();
       } else {
         set({ authUser: null });
@@ -90,6 +114,7 @@ export const useAuthStore = create((set, get) => ({
       const userObj = { email: data.email, isAuthenticated: true, _id: res.data.data?.user?._id || "placeholder_id", ...res.data.data?.user };
       localStorage.setItem("chat-user", JSON.stringify(userObj));
       set({ authUser: userObj });
+      await get().ensureE2EEKeys(userObj);
       useSocketStore.getState().connectSocket();
       
       toast.success("Logged in successfully");

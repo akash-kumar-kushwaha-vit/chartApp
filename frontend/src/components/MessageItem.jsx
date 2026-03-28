@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
-import { SmilePlus, Reply, Edit2, Trash2, X, Check, CheckCheck, FileText, Download, ChevronDown, Mic } from "lucide-react";
+import { SmilePlus, Reply, Edit2, Trash2, X, Check, CheckCheck, FileText, Download, ChevronDown, Mic, Lock } from "lucide-react";
 
 const renderMessageTime = (dateString, isEdited, updatedAtString) => {
   const targetDate = isEdited && updatedAtString ? updatedAtString : dateString;
@@ -25,13 +25,35 @@ const ReactionPicker = ({ onSelect, onClose }) => {
   );
 };
 
+const renderRichText = (text) => {
+  if (!text) return null;
+  const parts = text.split(/(\*(?:.*?)\*|_(?:.*?)_|~(?:.*?)~|`(?:.*?)`)/g);
+
+  return parts.map((part, index) => {
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return <strong key={index}>{part.slice(1, -1)}</strong>;
+    }
+    if (part.startsWith('_') && part.endsWith('_') && part.length > 2) {
+      return <em key={index}>{part.slice(1, -1)}</em>;
+    }
+    if (part.startsWith('~') && part.endsWith('~') && part.length > 2) {
+      return <s key={index}>{part.slice(1, -1)}</s>;
+    }
+    if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+      return <code key={index} className="bg-black/10 dark:bg-white/10 rounded px-1.5 py-0.5 font-mono text-[13.5px]">{part.slice(1, -1)}</code>;
+    }
+    return <span key={index}>{part}</span>;
+  });
+};
+
 const MessageItem = ({ message, isMe, authUser, selectedUser, setSelectedMedia, getDownloadUrl }) => {
-  const { setReplyingTo, editMessage, deleteMessage, reactToMessage } = useChatStore();
+  const { setReplyingTo, editMessage, deleteMessage, reactToMessage, setForwardMessageData } = useChatStore();
   
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.text || "");
   const [showMenu, setShowMenu] = useState(false);
   const [showReactPicker, setShowReactPicker] = useState(false);
+  const [isTapped, setIsTapped] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -39,6 +61,7 @@ const MessageItem = ({ message, isMe, authUser, selectedUser, setSelectedMedia, 
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setShowMenu(false);
         setShowReactPicker(false);
+        setIsTapped(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -61,14 +84,17 @@ const MessageItem = ({ message, isMe, authUser, selectedUser, setSelectedMedia, 
 
   return (
     <div className={`flex w-full ${isMe ? "justify-end" : "justify-start"} mb-4`}>
-      <div className={`flex flex-col max-w-[85%] sm:max-w-[75%] ${isMe ? "items-end" : "items-start"}`}>
+      <div 
+        className={`flex flex-col max-w-[85%] sm:max-w-[75%] ${isMe ? "items-end" : "items-start"}`}
+        onClick={() => setIsTapped(prev => !prev)}
+      >
         
         <div className="relative group flex items-start gap-1" ref={menuRef}>
           {/* Reaction Picker Trigger (WhatsApp Style - shows on hover next to bubble) */}
           {!isDeleted && isMe && (
-            <div className={`opacity-0 group-hover:opacity-100 transition-opacity self-center mr-1 relative`}>
+            <div className={`transition-opacity self-center mr-1 relative ${isTapped ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
               <button 
-                onClick={() => setShowReactPicker(!showReactPicker)}
+                onClick={(e) => { e.stopPropagation(); setShowReactPicker(!showReactPicker); }}
                 className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-full transition-colors"
                 title="React"
               >
@@ -96,9 +122,9 @@ const MessageItem = ({ message, isMe, authUser, selectedUser, setSelectedMedia, 
               
               {/* WhatsApp-style Dropdown Icon (Shows on Hover inside bubble) */}
               {!isDeleted && (
-                <div className={`absolute top-1 right-1 opacity-0 group-hover/bubble:opacity-100 transition-opacity z-10 ${isMe ? 'bg-gradient-to-l from-[#d9fdd3] dark:from-[#005c4b]' : 'bg-gradient-to-l from-white dark:from-[#202c33]'} pl-2 pb-2 rounded-bl-xl`}>
+                <div className={`absolute top-1 right-1 transition-opacity z-10 ${isMe ? 'bg-gradient-to-l from-[#d9fdd3] dark:from-[#005c4b]' : 'bg-gradient-to-l from-white dark:from-[#202c33]'} pl-2 pb-2 rounded-bl-xl ${isTapped || showMenu ? 'opacity-100' : 'opacity-0 group-hover/bubble:opacity-100'}`}>
                   <button 
-                    onClick={() => {setShowMenu(!showMenu); setShowReactPicker(false)}}
+                    onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); setShowReactPicker(false); }}
                     className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
                   >
                     <ChevronDown className="w-5 h-5" />
@@ -119,6 +145,12 @@ const MessageItem = ({ message, isMe, authUser, selectedUser, setSelectedMedia, 
                       >
                         React
                       </button>
+                      <button 
+                        onClick={() => { setForwardMessageData(message); setShowMenu(false); }}
+                        className="w-full text-left px-4 py-2 text-sm text-[#111b21] dark:text-[#d1d7db] hover:bg-gray-100 dark:hover:bg-[#182229] transition-colors"
+                      >
+                        Forward
+                      </button>
                       {isMe && (
                         <>
                           <button 
@@ -137,6 +169,13 @@ const MessageItem = ({ message, isMe, authUser, selectedUser, setSelectedMedia, 
                       )}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Forwarded Tag */}
+              {message.isForwarded && !isDeleted && (
+                <div className="text-[11px] italic text-gray-500 dark:text-gray-400 flex items-center gap-1 mb-0.5 px-1 pt-1 opacity-90">
+                  <Reply className="w-3 h-3 scale-x-[-1]" /> Forwarded
                 </div>
               )}
 
@@ -228,13 +267,39 @@ const MessageItem = ({ message, isMe, authUser, selectedUser, setSelectedMedia, 
               ) : (
                 !isDeleted && message.text && (
                   <div className="px-1 py-0.5 text-[15px] leading-snug whitespace-pre-wrap pr-10">
-                    {message.text}
+                    {renderRichText(message.text)}
                   </div>
                 )
               )}
 
+              {/* Link Preview Card */}
+              {!isDeleted && message.linkPreview && message.linkPreview.title && (
+                <a 
+                  href={message.linkPreview.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className={`block my-1 rounded-lg overflow-hidden border ${isMe ? 'border-[#b5e6af] dark:border-[#004f40] bg-[#cbf5c4] dark:bg-[#005142]' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1a2329]'} mx-1 max-w-full hover:opacity-90 transition-opacity`}
+                  onClick={(e) => e.stopPropagation()} // Prevent bubble tap toggle when clicking link
+                >
+                  {message.linkPreview.image && (
+                    <div className="w-full h-32 overflow-hidden bg-gray-200 dark:bg-gray-800">
+                      <img src={message.linkPreview.image} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="p-2">
+                    <h4 className="font-semibold text-sm truncate">{message.linkPreview.title}</h4>
+                    {message.linkPreview.description && (
+                      <p className="text-xs opacity-80 line-clamp-2 mt-0.5 leading-tight">{message.linkPreview.description}</p>
+                    )}
+                  </div>
+                </a>
+              )}
+
               {/* Time and Edited Tag */}
               <div className="flex justify-end items-center gap-1 mt-0.5 px-1 pb-0.5">
+                {message.isDecrypted && (
+                  <Lock className="w-2.5 h-2.5 text-emerald-500 flex-shrink-0" title="End-to-end encrypted" />
+                )}
                 <span className="text-[11px] text-gray-500 dark:text-gray-400">
                   {renderMessageTime(message.createdAt, message.isEdited && !message.isDeleted, message.updatedAt)}
                 </span>
@@ -267,9 +332,9 @@ const MessageItem = ({ message, isMe, authUser, selectedUser, setSelectedMedia, 
 
           {/* Reaction Picker Trigger (WhatsApp Style - shows on hover next to bubble for receiver) */}
           {!isDeleted && !isMe && (
-            <div className={`opacity-0 group-hover:opacity-100 transition-opacity self-center ml-1 relative`}>
+            <div className={`transition-opacity self-center ml-1 relative ${isTapped ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
               <button 
-                onClick={() => setShowReactPicker(!showReactPicker)}
+                onClick={(e) => { e.stopPropagation(); setShowReactPicker(!showReactPicker); }}
                 className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-full transition-colors"
                 title="React"
               >

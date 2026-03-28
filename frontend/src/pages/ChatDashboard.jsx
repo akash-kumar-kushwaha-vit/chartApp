@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import ChatWindow from "../components/ChatWindow";
+import ForwardModal from "../components/ForwardModal";
 import { useChatStore } from "../store/useChatStore";
 
 const ChatDashboard = () => {
@@ -14,7 +15,7 @@ const ChatDashboard = () => {
   }, [getUnreadCounts]);
 
   return (
-    <div className="h-[calc(100vh-4rem)] max-w-7xl mx-auto sm:px-6 lg:px-8 sm:py-6">
+    <div className="h-full w-full max-w-7xl mx-auto sm:px-6 lg:px-8 sm:py-6 relative">
       <div className="bg-white dark:bg-gray-900 sm:border border-gray-200 dark:border-gray-800 sm:rounded-2xl shadow-xl overflow-hidden h-full flex flex-col md:flex-row shadow-gray-200 dark:shadow-black/50">
         
         {/* Sidebar container - hides on mobile when a user is selected */}
@@ -41,6 +42,7 @@ const ChatDashboard = () => {
           )}
         </div>
 
+        <ForwardModal />
       </div>
     </div>
   );

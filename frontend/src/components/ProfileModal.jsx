@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { X, Camera, User, Pencil, CheckCircle2, Loader2 } from "lucide-react";
+import { X, Camera, User, Pencil, CheckCircle2, Loader2, Image as ImageIcon } from "lucide-react";
 
 const ProfileModal = ({ isOpen, onClose }) => {
   const { authUser, updateProfile, isUpdatingProfile } = useAuthStore();
@@ -9,7 +9,11 @@ const ProfileModal = ({ isOpen, onClose }) => {
   const [status, setStatus] = useState("");
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarBase64, setAvatarBase64] = useState(null);
+  const [wallpaperPreview, setWallpaperPreview] = useState(null);
+  const [wallpaperBase64, setWallpaperBase64] = useState(null);
+
   const fileInputRef = useRef(null);
+  const wallpaperInputRef = useRef(null);
 
   // Sync current user data whenever modal opens
   useEffect(() => {
@@ -18,6 +22,8 @@ const ProfileModal = ({ isOpen, onClose }) => {
       setStatus(authUser.status || "");
       setAvatarPreview(authUser.avtar || null);
       setAvatarBase64(null);
+      setWallpaperPreview(authUser.chatWallpaper || null);
+      setWallpaperBase64(null);
     }
   }, [isOpen, authUser]);
 
@@ -37,6 +43,20 @@ const ProfileModal = ({ isOpen, onClose }) => {
     reader.readAsDataURL(file);
   };
 
+  const handleWallpaperChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setWallpaperPreview(reader.result);
+      setWallpaperBase64(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
     const payload = {};
 
@@ -48,6 +68,9 @@ const ProfileModal = ({ isOpen, onClose }) => {
     }
     if (avatarBase64) {
       payload.avatar = avatarBase64;
+    }
+    if (wallpaperBase64) {
+      payload.chatWallpaper = wallpaperBase64;
     }
 
     if (Object.keys(payload).length === 0) {
@@ -190,6 +213,44 @@ const ProfileModal = ({ isOpen, onClose }) => {
                 {authUser?.email || "—"}
               </p>
             </div>
+          </div>
+
+          {/* Chat Wallpaper Section */}
+          <div className="space-y-1.5 pt-2 border-t border-gray-100 dark:border-gray-800">
+            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex justify-between items-center px-1">
+              <span>Chat Wallpaper</span>
+              {wallpaperPreview && (
+                <button 
+                  onClick={() => { setWallpaperPreview(null); setWallpaperBase64("clear"); }} 
+                  className="text-red-500 hover:underline text-xs capitalize normal-case"
+                >
+                  Remove
+                </button>
+              )}
+            </label>
+            <div 
+              onClick={() => wallpaperInputRef.current?.click()}
+              className="relative h-20 w-full rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer flex items-center justify-center overflow-hidden group"
+            >
+              {wallpaperPreview ? (
+                <img src={wallpaperPreview} alt="Wallpaper" className="w-full h-full object-cover opacity-80" />
+              ) : (
+                <div className="flex flex-col items-center text-gray-400 pb-1">
+                  <ImageIcon className="w-6 h-6 mb-1 opacity-70" />
+                  <span className="text-xs">Upload wallpaper</span>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-colors">
+                <p className="text-white opacity-0 group-hover:opacity-100 font-medium text-sm drop-shadow-md">Change</p>
+              </div>
+            </div>
+            <input
+              ref={wallpaperInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleWallpaperChange}
+            />
           </div>
 
           {/* Save Button */}

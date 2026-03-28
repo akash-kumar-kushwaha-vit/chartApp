@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { axiosInstance } from "../api/axios";
 import toast from "react-hot-toast";
+import { useAuthStore } from "./useAuthStore";
+import { generateAESKey, encryptTextData, encryptAESKeyWithRSA, importPublicKey, decryptMessageObjects } from "../lib/crypto";
 
 export const useChatStore = create((set, get) => ({
   messages: [],
@@ -11,8 +13,10 @@ export const useChatStore = create((set, get) => ({
   isMessagesLoading: false,
   hasMoreMessages: true,
   replyingTo: null,
+  forwardMessageData: null,
 
   setReplyingTo: (message) => set({ replyingTo: message }),
+  setForwardMessageData: (message) => set({ forwardMessageData: message }),
 
   getUnreadCounts: async () => {
     try {
@@ -44,7 +48,7 @@ export const useChatStore = create((set, get) => ({
 
   addContact: async (username) => {
     try {
-        const res = await axiosInstance.post("/auth/add-contact", { username });
+        const res = await axiosInstance.post("/auth/add-contact", { query: username });
         const newContact = res.data.data;
         // Optionally prepend it or just refetch users
         get().getUsers(); 
@@ -94,7 +98,12 @@ export const useChatStore = create((set, get) => ({
       }
 
       const res = await axiosInstance.get(`/messages/${userId}?${queryParams.toString()}`);
-      const newMessages = res.data.data;
+      let newMessages = res.data.data;
+
+      const authUser = useAuthStore.getState().authUser;
+      if (authUser) {
+        newMessages = await decryptMessageObjects(newMessages, authUser._id || authUser.id);
+      }
 
       set((state) => ({
         messages: pagination.skip === 0 
@@ -129,15 +138,83 @@ export const useChatStore = create((set, get) => ({
     const { selectedUser, messages, replyingTo } = get();
     try {
       if (replyingTo) {
-        messageData.replyTo = replyingTo._id;
+        if (messageData instanceof FormData) messageData.append("replyTo", replyingTo._id);
+        else messageData.replyTo = replyingTo._id;
       }
       
       const isGroup = selectedUser?.isGroup || false;
+      const authUser = useAuthStore.getState().authUser;
+
+      // E2EE ENCRYPTION (1-on-1 only for now)
+      if (!isGroup && selectedUser.publicKey && authUser.publicKey) {
+        let textToEncrypt = "";
+        const isFormData = messageData instanceof FormData;
+        
+        if (isFormData && messageData.has("text")) {
+          textToEncrypt = messageData.get("text");
+        } else if (!isFormData && messageData.text) {
+          textToEncrypt = messageData.text;
+        }
+
+        if (textToEncrypt) {
+          try {
+            const aesKey = await generateAESKey();
+            const { ciphertext, iv } = await encryptTextData(textToEncrypt, aesKey);
+            
+            const receiverRsaKey = await importPublicKey(selectedUser.publicKey);
+            const senderRsaKey = await importPublicKey(authUser.publicKey);
+            
+            const receiverEncKey = await encryptAESKeyWithRSA(aesKey, receiverRsaKey);
+            const senderEncKey = await encryptAESKeyWithRSA(aesKey, senderRsaKey);
+            
+            const encKeysArray = JSON.stringify([
+              { userId: selectedUser._id, encryptedKey: receiverEncKey },
+              { userId: authUser._id || authUser.id, encryptedKey: senderEncKey }
+            ]);
+            
+            if (isFormData) {
+              messageData.set("text", ciphertext);
+              messageData.append("iv", iv);
+              messageData.append("encryptionKeys", encKeysArray);
+            } else {
+              messageData.text = ciphertext;
+              messageData.iv = iv;
+              messageData.encryptionKeys = encKeysArray;
+            }
+          } catch (encErr) {
+            console.error("Encryption error:", encErr);
+            toast.error("Failed to encrypt message. Sending unencrypted...");
+          }
+        }
+      }
+
       const res = await axiosInstance.post(`/messages/send/${selectedUser._id}?isGroup=${isGroup}`, messageData);
       
       set({ messages: [...messages, res.data.data], replyingTo: null });
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to send message");
+    }
+  },
+
+  forwardMessage: async (targetId, isGroup, messageToForward) => {
+    try {
+      const formData = new FormData();
+      if (messageToForward.text) formData.append("text", messageToForward.text);
+      if (isGroup) formData.append("isGroup", "true");
+      formData.append("isForwarded", "true");
+      
+      if (messageToForward.image) formData.append("imageURL", messageToForward.image);
+      if (messageToForward.video) formData.append("videoURL", messageToForward.video);
+      if (messageToForward.fileUrl) {
+        formData.append("fileURL", messageToForward.fileUrl);
+        formData.append("fileNameStr", messageToForward.fileName);
+      }
+      if (messageToForward.audioUrl) formData.append("audioURL", messageToForward.audioUrl);
+      
+      await axiosInstance.post(`/messages/send/${targetId}?isGroup=${isGroup}`, formData);
+      toast.success("Message forwarded");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to forward message");
     }
   },
 

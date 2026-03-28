@@ -33,15 +33,17 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen transition-colors duration-200 bg-white dark:bg-gray-900 text-black dark:text-white">
+      <div className="h-[100dvh] flex flex-col transition-colors duration-200 bg-white dark:bg-gray-900 text-black dark:text-white overflow-hidden">
         <Navbar />
         <VideoCallManager />
-        <Routes>
-          <Route path="/" element={authUser ? <ChatDashboard /> : <Navigate to="/login" />} />
-          <Route path="/register" element={!authUser ? <RegisterPage /> : <Navigate to="/" />} />
-          <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
-          <Route path="/verify-email" element={<VerifyEmailPage />} />
-        </Routes>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col">
+          <Routes>
+            <Route path="/" element={authUser ? <ChatDashboard /> : <Navigate to="/login" />} />
+            <Route path="/register" element={!authUser ? <RegisterPage /> : <Navigate to="/" />} />
+            <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+          </Routes>
+        </main>
         <Toaster />
       </div>
     </BrowserRouter>

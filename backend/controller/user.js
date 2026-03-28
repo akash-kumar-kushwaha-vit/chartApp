@@ -267,7 +267,7 @@ const getMe = asyncHandler(async (req, res) => {
 });
 
 const updateProfile = asyncHandler(async (req, res) => {
-    const { fullName, status, avatar } = req.body;
+    const { fullName, status, avatar, chatWallpaper, publicKey } = req.body;
     const userId = req.user._id;
 
     const updateData = {};
@@ -294,6 +294,23 @@ const updateProfile = asyncHandler(async (req, res) => {
             updateData.avtar = uploadResult.secure_url;
         } catch (err) {
             throw new ApiError(500, "Failed to upload avatar: " + err.message);
+        }
+    }
+
+    if (chatWallpaper) {
+        if (chatWallpaper === "clear") {
+            updateData.chatWallpaper = "";
+        } else {
+            try {
+                const uploadResult = await cloudinary.uploader.upload(chatWallpaper, {
+                    folder: "chat_wallpapers",
+                    quality: "auto",
+                    fetch_format: "auto",
+                });
+                updateData.chatWallpaper = uploadResult.secure_url;
+            } catch (err) {
+                throw new ApiError(500, "Failed to upload wallpaper: " + err.message);
+            }
         }
     }
 

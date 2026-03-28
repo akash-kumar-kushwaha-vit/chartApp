@@ -162,7 +162,7 @@ const MessageInput = () => {
   };
 
   return (
-    <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+    <div className="p-2 sm:p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pb-4">
       
       {/* Replying Banner */}
       {replyingTo && (
@@ -241,15 +241,15 @@ const MessageInput = () => {
         </div>
       )}
 
-      <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+      <form onSubmit={handleSendMessage} className="flex items-center gap-1 sm:gap-2">
         {/* Image button */}
         <button
           type="button"
           onClick={() => imageInputRef.current?.click()}
           title="Attach image"
-          className="p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
+          className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
         >
-          <ImageIcon className="w-6 h-6" />
+          <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
         <input
           type="file"
@@ -264,9 +264,9 @@ const MessageInput = () => {
           type="button"
           onClick={() => videoInputRef.current?.click()}
           title="Attach video"
-          className="p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
+          className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
         >
-          <Film className="w-6 h-6" />
+          <Film className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
         <input
           type="file"
@@ -281,9 +281,9 @@ const MessageInput = () => {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           title="Attach file"
-          className="p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
+          className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
         >
-          <FileIcon className="w-6 h-6" />
+          <FileIcon className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
         <input
           type="file"
@@ -312,7 +312,7 @@ const MessageInput = () => {
         ) : (
           <input
             type="text"
-            className="w-full bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-900 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none py-3 px-4"
+            className="w-full bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-900 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none py-2 px-3 sm:py-3 sm:px-4"
             placeholder="Type a message..."
             value={text}
             onChange={handleTextChange}
@@ -324,18 +324,18 @@ const MessageInput = () => {
           <button
             type="button"
             onClick={startRecording}
-            className="p-3 bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:hover:bg-indigo-800 rounded-xl flex-shrink-0"
+            className="p-2 sm:p-3 bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:hover:bg-indigo-800 rounded-full sm:rounded-xl flex-shrink-0"
             title="Record Voice Note"
           >
-            <Mic className="w-5 h-5" />
+            <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         ) : (
           <button
             type="submit"
             disabled={!text.trim() && !imageFile && !videoFile && !fileData && !audioBlob}
-            className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            className="p-2 sm:p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full sm:rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         )}
       </form>

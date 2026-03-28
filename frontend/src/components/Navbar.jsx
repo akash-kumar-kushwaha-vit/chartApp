@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
+import { useChatStore } from "../store/useChatStore";
 import { LogOut, MessageSquare, Moon, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
 import ProfileModal from "./ProfileModal";
@@ -8,6 +9,7 @@ import ProfileModal from "./ProfileModal";
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
+  const { selectedUser } = useChatStore();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const getInitials = (name) => {
@@ -22,7 +24,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-40">
+      <nav className={`border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-40 flex-shrink-0 transition-all duration-200 ${selectedUser ? 'hidden md:block' : 'block'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-all">

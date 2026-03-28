@@ -6,6 +6,8 @@ import { ApiResponse } from "../utility/apiResponse.js";
 import { asyncHandler } from "../utility/asyncHandler.js";
 import uplodcloudinary from "../utility/cloudinary.js";
 import { getReceiverSocketId, io } from "../socket/socket.js";
+import { getLinkPreview } from "link-preview-js";
+
 export const getMessages = asyncHandler(async (req, res) => {
     try {
         const { id: userToChatId } = req.params;
@@ -58,12 +60,12 @@ export const getMessages = asyncHandler(async (req, res) => {
 });
 
 export const sendMessage = asyncHandler(async (req, res) => {
-    const { text, replyTo, isGroup } = req.body;
+    const { text, replyTo, isGroup, isForwarded, imageURL, videoURL, fileURL, fileNameStr, audioURL, iv, encryptionKeys } = req.body;
     const { id: targetId } = req.params;
     const senderId = req.user._id;
 
     // Handle image upload
-    let imageUrl = null;
+    let imageUrl = imageURL || null;
     if (req.files && req.files.image && req.files.image[0]) {
         const response = await uplodcloudinary(req.files.image[0].path, "image");
         if (response) {
@@ -74,7 +76,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     }
 
     // Handle video upload
-    let videoUrl = null;
+    let videoUrl = videoURL || null;
     if (req.files && req.files.video && req.files.video[0]) {
         const response = await uplodcloudinary(req.files.video[0].path, "video");
         if (response) {
@@ -85,8 +87,8 @@ export const sendMessage = asyncHandler(async (req, res) => {
     }
 
     // Handle file upload
-    let fileUrl = null;
-    let fileName = null;
+    let fileUrl = fileURL || null;
+    let fileName = fileNameStr || null;
     if (req.files && req.files.file && req.files.file[0]) {
         const response = await uplodcloudinary(req.files.file[0].path, "auto");
         if (response) {
@@ -98,7 +100,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     }
 
     // Handle audio upload
-    let audioUrl = null;
+    let audioUrl = audioURL || null;
     if (req.files && req.files.audio && req.files.audio[0]) {
         const response = await uplodcloudinary(req.files.audio[0].path, "video");
         if (response) {
@@ -112,6 +114,33 @@ export const sendMessage = asyncHandler(async (req, res) => {
         throw new ApiError(400, "A message must have text, an image, a video, an audio note, or a file");
     }
 
+    // Attempt to fetch link preview if text contains a URL
+    let linkPreviewData = null;
+    if (text) {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const matches = text.match(urlRegex);
+        if (matches && matches.length > 0) {
+            try {
+                const preview = await getLinkPreview(matches[0], {
+                    timeout: 3000,
+                    headers: {
+                        "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+                    }
+                });
+                if (preview && preview.title) {
+                    linkPreviewData = {
+                        title: preview.title,
+                        description: preview.description || "",
+                        image: preview.images && preview.images.length > 0 ? preview.images[0] : null,
+                        url: preview.url || matches[0]
+                    };
+                }
+            } catch (err) {
+                console.error("Link preview fetch error:", err.message || err);
+            }
+        }
+    }
+
     const messageData = {
         senderId,
         text: text || "",
@@ -121,8 +150,19 @@ export const sendMessage = asyncHandler(async (req, res) => {
         fileName: fileName,
         audioUrl: audioUrl,
         replyTo: replyTo || null,
+        isForwarded: isForwarded || false,
+        linkPreview: linkPreviewData,
         status: "sent"
     };
+
+    if (iv) messageData.iv = iv;
+    if (encryptionKeys) {
+        try {
+            messageData.encryptionKeys = typeof encryptionKeys === 'string' ? JSON.parse(encryptionKeys) : encryptionKeys;
+        } catch (e) {
+            console.error("Failed to parse encryptionKeys");
+        }
+    }
 
     const isGroupBoolean = isGroup === 'true' || isGroup === true;
 

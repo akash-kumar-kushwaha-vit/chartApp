@@ -60,6 +60,26 @@ const messageSchema = new mongoose.Schema(
             enum: ["sent", "delivered", "read"],
             default: "sent",
         },
+        isForwarded: {
+            type: Boolean,
+            default: false,
+        },
+        linkPreview: {
+            title: String,
+            description: String,
+            image: String,
+            url: String,
+        },
+        iv: {
+            type: String, // Base64 encoded Initialization Vector for AES-GCM
+        },
+        encryptionKeys: [{
+            userId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+            },
+            encryptedKey: String // Base64 encoded AES key encrypted with the user's RSA public key
+        }],
         seen: {
             type: Boolean,
             default: false,
