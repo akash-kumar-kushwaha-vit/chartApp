@@ -26,7 +26,7 @@ const CreateGroupModal = ({ onClose }) => {
   };
 
   const toggleMember = (userId) => {
-    setSelectedMembers(prev => 
+    setSelectedMembers(prev =>
       prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
     );
   };
@@ -41,7 +41,7 @@ const CreateGroupModal = ({ onClose }) => {
       formData.append("name", name);
       formData.append("description", description);
       formData.append("members", JSON.stringify(selectedMembers));
-      
+
       if (imageFile) {
         formData.append("avtar", imageFile);
       }
@@ -58,7 +58,7 @@ const CreateGroupModal = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-        
+
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Create Group</h2>
@@ -68,7 +68,7 @@ const CreateGroupModal = ({ onClose }) => {
         </div>
 
         <form onSubmit={handleCreateGroup} className="flex-1 overflow-y-auto p-6 space-y-6">
-          
+
           {/* Avatar Upload */}
           <div className="flex justify-center">
             <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
@@ -83,8 +83,8 @@ const CreateGroupModal = ({ onClose }) => {
                 <Camera className="w-6 h-6 text-white" />
               </div>
             </div>
-            <input 
-              type="file" 
+            <input
+              type="file"
               ref={fileInputRef}
               accept="image/*"
               className="hidden"
@@ -95,8 +95,8 @@ const CreateGroupModal = ({ onClose }) => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group Subject</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 autoFocus
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -109,8 +109,8 @@ const CreateGroupModal = ({ onClose }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (Optional)</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Group description"
@@ -126,14 +126,14 @@ const CreateGroupModal = ({ onClose }) => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Add Members</label>
               <span className="text-xs text-indigo-500 font-medium">{selectedMembers.length} selected</span>
             </div>
-            
+
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 max-h-48 overflow-y-auto border border-gray-100 dark:border-gray-700">
               {contactList.length === 0 ? (
                 <p className="text-sm text-center text-gray-500 py-4">You don't have any contacts to add.</p>
               ) : (
                 contactList.map(contact => (
-                  <div 
-                    key={contact._id} 
+                  <div
+                    key={contact._id}
                     onClick={() => toggleMember(contact._id)}
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                   >
@@ -163,7 +163,7 @@ const CreateGroupModal = ({ onClose }) => {
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 shrink-0">
-          <button 
+          <button
             onClick={handleCreateGroup}
             disabled={!name.trim() || selectedMembers.length === 0 || isSubmitting}
             className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 dark:disabled:bg-indigo-800 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-sm"

@@ -115,10 +115,10 @@ const ChatWindow = () => {
       )}
 
       {/* Header */}
-      <div className="relative z-10 p-4 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md flex justify-between items-center shadow-sm">
-        <div className="flex items-center gap-3">
+      <div className="relative z-10 p-3 sm:p-4 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md flex items-center shadow-sm w-full">
+        <div className="flex items-center gap-2 sm:gap-3 w-full">
           <button 
-            className="md:hidden p-2 -ml-2 text-gray-500"
+            className="md:hidden p-1.5 sm:p-2 -ml-2 text-gray-500 flex-shrink-0"
             onClick={() => setSelectedUser(null)}
           >
             <ArrowLeft className="w-5 h-5" />
@@ -164,10 +164,10 @@ const ChatWindow = () => {
                 )}
               </div>
               <div 
-                className="cursor-pointer hover:opacity-80 transition-opacity flex-1"
+                className="cursor-pointer hover:opacity-80 transition-opacity flex-1 min-w-0"
                 onClick={() => setIsProfileViewerOpen(true)}
               >
-                <h3 className="font-semibold text-gray-900 dark:text-white leading-tight">{selectedUser.fullName}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white leading-tight truncate">{selectedUser.fullName}</h3>
                 {selectedUser.isGroup ? (
                   isTyping ? (
                     <p className="text-xs text-indigo-500 font-medium animate-pulse">someone is typing...</p>
@@ -194,14 +194,14 @@ const ChatWindow = () => {
                 <>
                   <button 
                     onClick={() => callUser(selectedUser, false)}
-                    className="p-2 text-gray-400 hover:text-green-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors ml-auto"
+                    className="p-1.5 sm:p-2 text-gray-400 hover:text-green-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors ml-auto flex-shrink-0"
                     title="Voice Call"
                   >
                     <Phone className="w-5 h-5" />
                   </button>
                   <button 
                     onClick={() => callUser(selectedUser, true)}
-                    className="p-2 text-gray-400 hover:text-green-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                    className="p-1.5 sm:p-2 text-gray-400 hover:text-green-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
                     title="Video Call"
                   >
                     <Video className="w-5 h-5" />
@@ -211,7 +211,7 @@ const ChatWindow = () => {
               
               <button 
                 onClick={() => setShowSearch(true)} 
-                className={`p-2 text-gray-400 hover:text-indigo-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors ${selectedUser.isGroup ? 'ml-auto' : ''}`}
+                className={`p-1.5 sm:p-2 text-gray-400 hover:text-indigo-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0 ${selectedUser.isGroup ? 'ml-auto' : ''}`}
                 title="Search Messages"
               >
                 <Search className="w-5 h-5" />

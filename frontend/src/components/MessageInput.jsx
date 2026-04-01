@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useSocketStore } from "../store/useSocketStore";
-import { Send, Image as ImageIcon, X, Film, File as FileIcon, Mic } from "lucide-react";
+import { Send, Image as ImageIcon, X, Film, File as FileIcon, Mic, Plus } from "lucide-react";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
@@ -14,7 +14,9 @@ const MessageInput = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
 
+  const attachmentMenuRef = useRef(null);
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -25,6 +27,16 @@ const MessageInput = () => {
 
   const { sendMessage, selectedUser, replyingTo, setReplyingTo } = useChatStore();
   const { socket } = useSocketStore();
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (attachmentMenuRef.current && !attachmentMenuRef.current.contains(event.target)) {
+        setShowAttachmentMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const emitStopTyping = useCallback(() => {
     if (socket && selectedUser) {
@@ -242,55 +254,58 @@ const MessageInput = () => {
       )}
 
       <form onSubmit={handleSendMessage} className="flex items-center gap-1 sm:gap-2">
-        {/* Image button */}
-        <button
-          type="button"
-          onClick={() => imageInputRef.current?.click()}
-          title="Attach image"
-          className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
-        >
-          <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          ref={imageInputRef}
-          onChange={handleImageChange}
-        />
+        {/* Mobile-friendly Attachment Menu */}
+        <div className="relative" ref={attachmentMenuRef}>
+          <button
+            type="button"
+            onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+            title="Attachments"
+            className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800 rounded-full transition-transform duration-200 flex-shrink-0"
+            style={{ transform: showAttachmentMenu ? 'rotate(45deg)' : 'rotate(0deg)' }}
+          >
+            <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
 
-        {/* Video button */}
-        <button
-          type="button"
-          onClick={() => videoInputRef.current?.click()}
-          title="Attach video"
-          className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
-        >
-          <Film className="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
-        <input
-          type="file"
-          accept="video/*"
-          className="hidden"
-          ref={videoInputRef}
-          onChange={handleVideoChange}
-        />
+          {showAttachmentMenu && (
+            <div className="absolute bottom-[calc(100%+0.5rem)] left-0 min-w-[160px] bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-bottom-2">
+              <button
+                type="button"
+                onClick={() => { imageInputRef.current?.click(); setShowAttachmentMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <div className="p-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400">
+                  <ImageIcon className="w-[18px] h-[18px]" />
+                </div>
+                Gallery
+              </button>
+              <button
+                type="button"
+                onClick={() => { videoInputRef.current?.click(); setShowAttachmentMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <div className="p-1.5 rounded-full bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400">
+                  <Film className="w-[18px] h-[18px]" />
+                </div>
+                Video
+              </button>
+              <button
+                type="button"
+                onClick={() => { fileInputRef.current?.click(); setShowAttachmentMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <div className="p-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 dark:text-emerald-400">
+                  <FileIcon className="w-[18px] h-[18px]" />
+                </div>
+                Document
+              </button>
+            </div>
+          )}
+        </div>
 
-        {/* File button */}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          title="Attach file"
-          className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
-        >
-          <FileIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
-        <input
-          type="file"
-          className="hidden"
-          ref={fileInputRef}
-          onChange={handleGenericFileChange}
-        />
+        {/* Hidden Data Inputs */}
+        <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={handleImageChange} />
+        <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={handleVideoChange} />
+        <input type="file" className="hidden" ref={fileInputRef} onChange={handleGenericFileChange} />
 
         {isRecording ? (
           <div className="flex-1 flex items-center justify-between bg-red-50 dark:bg-red-900/20 rounded-xl py-3 px-4 border border-red-200 dark:border-red-800">
