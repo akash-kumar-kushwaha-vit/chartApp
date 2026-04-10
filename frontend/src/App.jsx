@@ -4,7 +4,6 @@ import { useAuthStore } from "./store/useAuthStore";
 import { useThemeStore } from "./store/useThemeStore";
 import { Toaster } from "react-hot-toast";
 
-import Navbar from "./components/Navbar";
 import VideoCallManager from "./components/VideoCallManager";
 import ChatDashboard from "./pages/ChatDashboard";
 import LoginPage from "./pages/LoginPage";
@@ -33,10 +32,9 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="h-[100dvh] flex flex-col transition-colors duration-200 bg-white dark:bg-gray-900 text-black dark:text-white overflow-hidden">
-        <Navbar />
+      <div className="h-[100dvh] w-full flex flex-col transition-colors duration-200 bg-white dark:bg-gray-900 text-black dark:text-white overflow-hidden">
         <VideoCallManager />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col">
+        <main className="flex-1 overflow-hidden relative flex flex-col">
           <Routes>
             <Route path="/" element={authUser ? <ChatDashboard /> : <Navigate to="/login" />} />
             <Route path="/register" element={!authUser ? <RegisterPage /> : <Navigate to="/" />} />

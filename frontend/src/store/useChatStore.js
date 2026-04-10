@@ -249,5 +249,50 @@ export const useChatStore = create((set, get) => ({
       get().markMessagesAsRead(selectedUser._id);
     }
   },
+
+  blockUser: async (userId) => {
+    try {
+      await axiosInstance.post(`/auth/block/${userId}`);
+      set((state) => ({
+        users: state.users.map((u) => u._id === userId ? { ...u, isBlocked: true } : u),
+        selectedUser: state.selectedUser?._id === userId ? { ...state.selectedUser, isBlocked: true } : state.selectedUser,
+      }));
+      toast.success("User blocked");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to block user");
+    }
+  },
+
+  unblockUser: async (userId) => {
+    try {
+      await axiosInstance.post(`/auth/unblock/${userId}`);
+      set((state) => ({
+        users: state.users.map((u) => u._id === userId ? { ...u, isBlocked: false } : u),
+        selectedUser: state.selectedUser?._id === userId ? { ...state.selectedUser, isBlocked: false } : state.selectedUser,
+      }));
+      toast.success("User unblocked");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to unblock user");
+    }
+  },
+
+  muteUser: async (userId) => {
+    try {
+      const res = await axiosInstance.post(`/auth/mute/${userId}`);
+      const nowMuted = res.data.data?.muted;
+      set((state) => ({
+        users: state.users.map((u) =>
+          u._id === userId ? { ...u, isMuted: nowMuted } : u
+        ),
+        selectedUser:
+          state.selectedUser?._id === userId
+            ? { ...state.selectedUser, isMuted: nowMuted }
+            : state.selectedUser,
+      }));
+      toast.success(nowMuted ? "Conversation muted" : "Conversation unmuted");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to toggle mute");
+    }
+  },
 }));
 

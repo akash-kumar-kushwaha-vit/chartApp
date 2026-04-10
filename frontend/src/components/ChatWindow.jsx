@@ -107,18 +107,24 @@ const ChatWindow = () => {
         backgroundImage: `url(${authUser.chatWallpaper})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-      } : {}}
+      } : {
+        backgroundImage: 'url("https://static.whatsapp.net/rsrc.php/v3/yl/r/r_QZ3OGC0XU.png")',
+        backgroundRepeat: 'repeat',
+        backgroundSize: 'contain'
+      }}
     >
       {/* Wallpaper overlay to guarantee text readability */}
-      {authUser?.chatWallpaper && (
-        <div className="absolute inset-0 bg-white/40 dark:bg-black/50 pointer-events-none z-0" />
+      {authUser?.chatWallpaper ? (
+         <div className="absolute inset-0 bg-white/40 dark:bg-black/50 pointer-events-none z-0" />
+      ) : (
+         <div className="absolute inset-0 bg-[#efeae2]/50 dark:bg-[#0b141a]/80 pointer-events-none z-0" />
       )}
 
       {/* Header */}
-      <div className="relative z-10 p-3 sm:p-4 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md flex items-center shadow-sm w-full">
+      <div className="relative z-10 h-[59px] px-4 py-2 border-b border-[#d1d7db] dark:border-[#202c33] bg-[#f0f2f5] dark:bg-[#202c33] flex items-center shadow-sm w-full flex-shrink-0">
         <div className="flex items-center gap-2 sm:gap-3 w-full">
           <button 
-            className="md:hidden p-1.5 sm:p-2 -ml-2 text-gray-500 flex-shrink-0"
+            className="md:hidden p-1.5 sm:p-2 -ml-2 text-[#54656f] dark:text-[#aebac1] flex-shrink-0"
             onClick={() => setSelectedUser(null)}
           >
             <ArrowLeft className="w-5 h-5" />
@@ -167,25 +173,25 @@ const ChatWindow = () => {
                 className="cursor-pointer hover:opacity-80 transition-opacity flex-1 min-w-0"
                 onClick={() => setIsProfileViewerOpen(true)}
               >
-                <h3 className="font-semibold text-gray-900 dark:text-white leading-tight truncate">{selectedUser.fullName}</h3>
+                <h3 className="font-medium text-[16px] text-[#111b21] dark:text-[#e9edef] leading-tight truncate">{selectedUser.fullName}</h3>
                 {selectedUser.isGroup ? (
                   isTyping ? (
-                    <p className="text-xs text-indigo-500 font-medium animate-pulse">someone is typing...</p>
+                    <p className="text-[13px] text-[#00a884] font-medium animate-pulse">someone is typing...</p>
                   ) : (
-                    <p className="text-xs text-gray-400 font-medium">Click here for group info</p>
+                    <p className="text-[13px] text-[#667781] dark:text-[#8696a0]">Click here for group info</p>
                   )
                 ) : (
                   isTyping ? (
-                    <p className="text-xs text-indigo-500 font-medium animate-pulse">typing...</p>
+                    <p className="text-[13px] text-[#00a884] font-medium animate-pulse">typing...</p>
                   ) : isOnline ? (
-                    <p className="text-xs text-green-500 font-medium">Online</p>
+                    <p className="text-[13px] text-[#667781] dark:text-[#8696a0]">online</p>
                   ) : (
-                    <p className="text-xs text-gray-400 font-medium">Offline</p>
+                    <p className="text-[13px] text-[#667781] dark:text-[#8696a0]">offline</p>
                   )
                 )}
                 {!selectedUser.isGroup && selectedUser.publicKey && (
-                  <p className="text-[10px] text-emerald-500 font-medium flex items-center gap-0.5 leading-none mt-0.5">
-                    <Lock className="w-2.5 h-2.5" /> End-to-end encrypted
+                  <p className="text-[11px] text-[#667781] dark:text-[#8696a0] flex items-center gap-0.5 leading-none mt-0.5">
+                    <Lock className="w-[10px] h-[10px]" /> End-to-end encrypted
                   </p>
                 )}
               </div>
@@ -194,14 +200,14 @@ const ChatWindow = () => {
                 <>
                   <button 
                     onClick={() => callUser(selectedUser, false)}
-                    className="p-1.5 sm:p-2 text-gray-400 hover:text-green-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors ml-auto flex-shrink-0"
+                    className="p-2 text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors ml-auto flex-shrink-0"
                     title="Voice Call"
                   >
                     <Phone className="w-5 h-5" />
                   </button>
                   <button 
                     onClick={() => callUser(selectedUser, true)}
-                    className="p-1.5 sm:p-2 text-gray-400 hover:text-green-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
+                    className="p-2 text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex-shrink-0"
                     title="Video Call"
                   >
                     <Video className="w-5 h-5" />
@@ -211,7 +217,7 @@ const ChatWindow = () => {
               
               <button 
                 onClick={() => setShowSearch(true)} 
-                className={`p-1.5 sm:p-2 text-gray-400 hover:text-indigo-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0 ${selectedUser.isGroup ? 'ml-auto' : ''}`}
+                className={`p-2 text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex-shrink-0 ${selectedUser.isGroup ? 'ml-auto' : ''}`}
                 title="Search Messages"
               >
                 <Search className="w-5 h-5" />

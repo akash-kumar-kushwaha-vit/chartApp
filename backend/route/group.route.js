@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createGroup, updateGroupInfo, addMembers, removeMember, getGroupDetails } from "../controller/group.js";
+import { createGroup, updateGroupInfo, addMembers, removeMember, getGroupDetails, assignAdmin } from "../controller/group.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 import multer from "multer";
 
@@ -13,5 +13,6 @@ groupRouter.route('/:groupId').get(verifyJWT, getGroupDetails);
 groupRouter.route('/:groupId/update').put(verifyJWT, upload.single('avtar'), updateGroupInfo);
 groupRouter.route('/:groupId/add').post(verifyJWT, addMembers);
 groupRouter.route('/:groupId/remove/:userId').delete(verifyJWT, removeMember);
+groupRouter.route('/:groupId/assign-admin/:userId').put(verifyJWT, assignAdmin);
 
 export default groupRouter;

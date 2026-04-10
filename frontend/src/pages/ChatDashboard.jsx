@@ -15,26 +15,32 @@ const ChatDashboard = () => {
   }, [getUnreadCounts]);
 
   return (
-    <div className="h-full w-full max-w-7xl mx-auto sm:px-6 lg:px-8 sm:py-6 relative">
-      <div className="bg-white dark:bg-gray-900 sm:border border-gray-200 dark:border-gray-800 sm:rounded-2xl shadow-xl overflow-hidden h-full flex flex-col md:flex-row shadow-gray-200 dark:shadow-black/50">
+    <div className="h-full w-full relative overflow-hidden bg-[#e3e2de] dark:bg-[#0b141a] flex justify-center items-center">
+      {/* Background graphic for WhatsApp Desktop effect */}
+      <div className="absolute top-0 left-0 w-full h-[127px] bg-[#00a884] dark:bg-[#202c33] hidden md:block" />
+
+      {/* Container - WhatsApp Web style: shadow-xl bounded on huge screens, full edge-to-edge on regular screens */}
+      <div className="w-full h-full md:w-[calc(100%-2rem)] md:h-[calc(100%-2rem)] xl:w-[calc(100%-4rem)] xl:h-[calc(100%-4rem)] max-w-[1600px] flex overflow-hidden shadow-2xl bg-white dark:bg-[#111b21] relative z-10 md:rounded-sm">
         
-        {/* Sidebar container - hides on mobile when a user is selected */}
-        <div className={`w-full md:w-80 border-r-0 md:border-r border-gray-200 dark:border-gray-800 flex-shrink-0 flex flex-col ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
+        {/* Sidebar container - WhatsApp specifically uses ~30% width minimum */}
+        <div className={`w-full md:w-[350px] lg:w-[400px] xl:w-[450px] border-r border-[#d1d7db] dark:border-[#202c33] flex-shrink-0 flex flex-col bg-white dark:bg-[#111b21] h-full ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
           <Sidebar />
         </div>
 
-        {/* Chat window container - hides on mobile when NO user is selected */}
-        <div className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-900/50 ${selectedUser ? 'flex' : 'hidden md:flex'}`}>
+        {/* Chat window container */}
+        <div className={`flex-1 flex flex-col min-w-0 h-full bg-[#efeae2] dark:bg-[#0b141a] relative ${selectedUser ? 'flex' : 'hidden md:flex'}`}>
           {!selectedUser ? (
-            <div className="flex-1 flex items-center justify-center flex-col gap-4 text-center p-8">
-              <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
-                <span className="text-4xl">👋</span>
-              </div>
+            <div className="flex-1 flex items-center justify-center flex-col gap-6 text-center p-8 bg-[#f0f2f5] dark:bg-[#222e35] border-b-[6px] border-[#00a884]">
+              {/* WhatsApp empty state */}
               <div>
-                <h3 className="text-xl font-semibold mb-2">Welcome to WebChat!</h3>
-                <p className="text-gray-500 dark:text-gray-400 max-w-sm">
-                  Select a conversation from the sidebar to start messaging.
+                <h3 className="text-[32px] font-light text-[#41525d] dark:text-[#e9edef] mt-8 mb-4">WebChat App</h3>
+                <p className="text-[#667781] dark:text-[#8696a0] max-w-md mx-auto text-[14px] leading-relaxed">
+                  Send and receive messages without keeping your phone online.<br/>
+                  Select a chat from the sidebar to start messaging.
                 </p>
+              </div>
+              <div className="absolute bottom-10 text-[#8696a0] text-[13px] flex items-center gap-1">
+                🔒 Your personal messages are end-to-end encrypted
               </div>
             </div>
           ) : (

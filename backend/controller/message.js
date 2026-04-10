@@ -64,6 +64,15 @@ export const sendMessage = asyncHandler(async (req, res) => {
     const { id: targetId } = req.params;
     const senderId = req.user._id;
 
+    // Block enforcement (1-on-1 only)
+    const isGroupBoolean = isGroup === 'true' || isGroup === true;
+    if (!isGroupBoolean) {
+        const receiver = await User.findById(targetId).select("blockedUsers");
+        if (receiver && receiver.blockedUsers.some(id => id.toString() === senderId.toString())) {
+            throw new ApiError(403, "You cannot send messages to this user");
+        }
+    }
+
     // Handle image upload
     let imageUrl = imageURL || null;
     if (req.files && req.files.image && req.files.image[0]) {
@@ -164,7 +173,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
         }
     }
 
-    const isGroupBoolean = isGroup === 'true' || isGroup === true;
+    // isGroupBoolean already declared at top of function
 
     if (isGroupBoolean) {
         messageData.groupId = targetId;

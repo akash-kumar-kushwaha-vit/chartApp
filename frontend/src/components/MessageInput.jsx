@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useSocketStore } from "../store/useSocketStore";
-import { Send, Image as ImageIcon, X, Film, File as FileIcon, Mic, Plus } from "lucide-react";
+import { Send, Image as ImageIcon, X, Film, File as FileIcon, Mic, Plus, ShieldOff, Shield } from "lucide-react";
+import toast from "react-hot-toast";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
@@ -25,103 +26,54 @@ const MessageInput = () => {
   const audioChunksRef = useRef([]);
   const recordingTimerRef = useRef(null);
 
-  const { sendMessage, selectedUser, replyingTo, setReplyingTo } = useChatStore();
+  const { sendMessage, selectedUser, replyingTo, setReplyingTo, blockUser, unblockUser } = useChatStore();
   const { socket } = useSocketStore();
 
+  const isBlocked = selectedUser?.isBlocked || false;
+  const isBlockedByThem = selectedUser?.isBlockedByThem || false;
+  const isAnyBlock = isBlocked || isBlockedByThem;
+
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (attachmentMenuRef.current && !attachmentMenuRef.current.contains(event.target)) {
-        setShowAttachmentMenu(false);
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const emitStopTyping = useCallback(() => {
-    if (socket && selectedUser) {
-      socket.emit("stopTyping", { receiverId: selectedUser._id, isGroup: selectedUser.isGroup });
-    }
-  }, [socket, selectedUser]);
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        setAudioBlob(blob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingDuration(0);
-
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      clearInterval(recordingTimerRef.current);
-    }
-  };
-
-  const formatDuration = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
-
-  const handleTextChange = (e) => {
-    setText(e.target.value);
-
-    // Emit typing event
-    if (socket && selectedUser) {
-      socket.emit("typing", { receiverId: selectedUser._id, isGroup: selectedUser.isGroup });
-    }
-
-    // Clear previous timeout and set a new one to stop typing after 2s
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(emitStopTyping, 2000);
-  };
+  }, [isRecording]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setVideoFile(null);
-    setVideoPreview(null);
-    setFileData(null);
-    setFilePreview(null);
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
     setImageFile(file);
     const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result);
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
     reader.readAsDataURL(file);
   };
 
   const handleVideoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setImageFile(null);
-    setImagePreview(null);
-    setFileData(null);
-    setFilePreview(null);
+    if (!file.type.startsWith("video/")) {
+      toast.error("Please select a video file");
+      return;
+    }
     setVideoFile(file);
     setVideoPreview(URL.createObjectURL(file));
+  };
+
+  const handleGenericFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setFileData(file);
+    setFilePreview(file.name);
   };
 
   const removeMedia = () => {
@@ -131,50 +83,137 @@ const MessageInput = () => {
     setVideoFile(null);
     setFilePreview(null);
     setFileData(null);
-    setAudioBlob(null);
     if (imageInputRef.current) imageInputRef.current.value = "";
     if (videoInputRef.current) videoInputRef.current.value = "";
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleGenericFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setImageFile(null);
-    setImagePreview(null);
-    setVideoFile(null);
-    setVideoPreview(null);
-    setFileData(file);
-    setFilePreview(file.name);
+  const handleTextChange = (e) => {
+    setText(e.target.value);
+    
+    // Typing indicator logic
+    if (socket && selectedUser && !isRecording && !audioBlob) {
+      socket.emit("typing", { 
+        receiverId: selectedUser._id, 
+        isGroup: selectedUser.isGroup 
+      });
+      
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit("stopTyping", { 
+          receiverId: selectedUser._id, 
+          isGroup: selectedUser.isGroup 
+        });
+      }, 2000);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        setAudioBlob(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+        clearInterval(recordingTimerRef.current);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingDuration(0);
+      
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+      toast.error("Microphone permission denied");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(recordingTimerRef.current);
+    }
+  };
+
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!text.trim() && !imageFile && !videoFile && !fileData && !audioBlob) return;
 
-    // Stop typing indicator on send
-    emitStopTyping();
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    try {
+      if (imageFile || videoFile || fileData || audioBlob) {
+        const formData = new FormData();
+        if (text.trim()) formData.append("text", text.trim());
+        if (imageFile) formData.append("image", imageFile);
+        if (videoFile) formData.append("video", videoFile);
+        if (fileData) formData.append("file", fileData);
+        if (audioBlob) formData.append("audio", audioBlob, "voice-note.webm");
+        
+        await sendMessage(formData);
+      } else {
+        await sendMessage({ text: text.trim() });
+      }
 
-    const formData = new FormData();
-    if (text.trim()) formData.append("text", text.trim());
-    if (imageFile) formData.append("image", imageFile);
-    if (videoFile) formData.append("video", videoFile);
-    if (fileData) formData.append("file", fileData);
-    if (audioBlob) formData.append("audio", audioBlob, "voice_message.webm");
-    
-    if (selectedUser.isGroup) {
-      formData.append("isGroup", "true");
+      setText("");
+      removeMedia();
+      setAudioBlob(null);
+      setIsRecording(false);
+    } catch (error) {
+       console.error("Failed to send message:", error);
     }
-
-    await sendMessage(formData);
-
-    setText("");
-    removeMedia();
   };
 
+  // If blocked in either direction, show a banner instead of the input
+  if (isAnyBlock && !selectedUser?.isGroup) {
+    return (
+      <div className="px-3 py-3 sm:px-4 sm:py-4 bg-[#f0f2f5] dark:bg-[#202c33] pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
+        <div className={`flex items-center justify-center gap-3 px-4 py-3 rounded-xl border ${
+          isBlocked
+            ? "bg-red-50 dark:bg-red-900/15 border-red-200 dark:border-red-800/50"
+            : "bg-amber-50 dark:bg-amber-900/15 border-amber-200 dark:border-amber-800/50"
+        }`}>
+          <ShieldOff className={`w-4 h-4 flex-shrink-0 ${isBlocked ? "text-red-500" : "text-amber-500"}`} />
+          <p className={`text-sm font-medium ${isBlocked ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
+            {isBlocked
+              ? "You have blocked this user."
+              : "You can't send messages to this user."}
+          </p>
+          {isBlocked && (
+            <button
+              onClick={() => unblockUser(selectedUser._id)}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 rounded-lg transition-colors flex-shrink-0"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              Unblock
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-2 sm:p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pb-4">
+    <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-[#f0f2f5] dark:bg-[#202c33] pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:pb-3 flex-shrink-0">
       
       {/* Replying Banner */}
       {replyingTo && (
@@ -259,8 +298,7 @@ const MessageInput = () => {
           <button
             type="button"
             onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-            title="Attachments"
-            className="p-1.5 sm:p-2 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-gray-800 rounded-full transition-transform duration-200 flex-shrink-0"
+            className="p-1.5 sm:p-2 text-[#54656f] dark:text-[#aebac1] hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-transform duration-200 flex-shrink-0"
             style={{ transform: showAttachmentMenu ? 'rotate(45deg)' : 'rotate(0deg)' }}
           >
             <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -327,8 +365,8 @@ const MessageInput = () => {
         ) : (
           <input
             type="text"
-            className="w-full bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-900 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none py-2 px-3 sm:py-3 sm:px-4"
-            placeholder="Type a message..."
+            className="w-full bg-white dark:bg-[#2a3942] border-transparent rounded-lg text-sm text-[#111b21] dark:text-[#e9edef] placeholder-[#8696a0] focus:ring-1 focus:ring-[#00a884] transition-all outline-none py-2.5 px-4"
+            placeholder="Type a message"
             value={text}
             onChange={handleTextChange}
             disabled={isRecording || audioBlob}
@@ -339,7 +377,7 @@ const MessageInput = () => {
           <button
             type="button"
             onClick={startRecording}
-            className="p-2 sm:p-3 bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:hover:bg-indigo-800 rounded-full sm:rounded-xl flex-shrink-0"
+            className="p-2 sm:p-2.5 text-[#54656f] dark:text-[#aebac1] hover:text-[#00a884] rounded-full transition-colors flex-shrink-0"
             title="Record Voice Note"
           >
             <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -348,7 +386,7 @@ const MessageInput = () => {
           <button
             type="submit"
             disabled={!text.trim() && !imageFile && !videoFile && !fileData && !audioBlob}
-            className="p-2 sm:p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full sm:rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            className="p-2 sm:p-2.5 text-[#00a884] hover:text-[#008f6f] rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
           >
             <Send className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>

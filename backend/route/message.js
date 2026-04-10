@@ -22,13 +22,13 @@ export const upload = multer({ storage: storage })
 
 const messageRouter = Router();
 
+messageRouter.route('/unread-counts').get(verifyJWT, getUnreadCounts)
 messageRouter.route('/:id').get(verifyJWT, getMessages)
 messageRouter.route('/send/:id').post(verifyJWT, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }, { name: 'file', maxCount: 1 }, { name: 'audio', maxCount: 1 }]), sendMessage)
 messageRouter.route('/edit/:id').put(verifyJWT, editMessage)
 messageRouter.route('/delete/:id').delete(verifyJWT, deleteMessage)
 messageRouter.route('/react/:id').post(verifyJWT, reactToMessage)
 messageRouter.route('/mark-read/:id').post(verifyJWT, markMessagesAsRead)
-messageRouter.route('/unread-counts').get(verifyJWT, getUnreadCounts)
 
 export default messageRouter;
 

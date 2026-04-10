@@ -54,10 +54,12 @@ export const useAuthStore = create((set, get) => ({
     try {
       const user = localStorage.getItem("chat-user");
       if (user) {
-        // ping an endpoint to verify the cookie is still valid
-        const res = await axiosInstance.get("/auth/users");
-        set({ authUser: JSON.parse(user) });
-        await get().ensureE2EEKeys(JSON.parse(user));
+        // ping /me to verify the cookie is still valid and get fresh user data
+        const res = await axiosInstance.get("/auth/me");
+        const freshUser = { ...JSON.parse(user), ...res.data.data };
+        localStorage.setItem("chat-user", JSON.stringify(freshUser));
+        set({ authUser: freshUser });
+        await get().ensureE2EEKeys(freshUser);
         useSocketStore.getState().connectSocket();
       } else {
         set({ authUser: null });

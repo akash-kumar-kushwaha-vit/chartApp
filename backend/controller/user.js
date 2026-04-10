@@ -87,10 +87,11 @@ const login = asyncHandler(async (req, res) => {
     if (!isPasswordValid) throw new ApiError(401, "Invalid password")
 
     const { accessToken, refreshToken } = await generateAccessTokenAndrefreshToken(existUser._id);
+    const isProduction = process.env.NODE_ENV === "production";
     const option = {
         httpOnly: true,
-        secure: true,
-        sameSite: "none"
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax"
     }
 
     res.cookie("ACCESS_TOKEN", accessToken, option);
@@ -116,10 +117,11 @@ const logout = asyncHandler(async (req, res) => {
         }
     )
 
+    const isProduction = process.env.NODE_ENV === "production";
     const options = {
         httpOnly: true,
-        secure: true,
-        sameSite: "none"
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax"
     }
 
     return res
@@ -159,12 +161,21 @@ const getUsersForSidebar = asyncHandler(async (req, res) => {
     const currentUser = await User.findById(loggedInUserId)
         .populate("contacts", "-password -REFRESH_TOKEN");
 
+    const blockedSet = new Set((currentUser.blockedUsers || []).map(id => id.toString()));
+    const mutedSet = new Set((currentUser.mutedUsers || []).map(id => id.toString()));
+
     const contactsWithPrivacy = currentUser.contacts.map((contact) => {
         const contactObj = contact.toObject();
         const isMutual = contactObj.contacts.some(id => id.toString() === loggedInUserId.toString());
         if (!isMutual) {
             contactObj.status = ""; // Hide status from non-mutual contacts
         }
+        const contactIdStr = contactObj._id.toString();
+        contactObj.isBlocked = blockedSet.has(contactIdStr);
+        contactObj.isMuted = mutedSet.has(contactIdStr);
+        // Check if this user has blocked the current user
+        const theirBlocked = (contactObj.blockedUsers || []).map(id => id.toString());
+        contactObj.isBlockedByThem = theirBlocked.includes(loggedInUserId.toString());
         return contactObj;
     });
 
@@ -175,7 +186,10 @@ const getUsersForSidebar = asyncHandler(async (req, res) => {
         username: group.members.length + " members",
         avtar: group.avtar,
         isGroup: true,
-        status: ""
+        status: "",
+        isBlocked: false,
+        isMuted: false,
+        isBlockedByThem: false,
     }));
 
     const unifiedList = [...contactsWithPrivacy, ...formattedGroups];
@@ -244,10 +258,11 @@ const googleAuth = asyncHandler(async (req, res) => {
     }
 
     const { accessToken, refreshToken } = await generateAccessTokenAndrefreshToken(user._id);
+    const isProduction = process.env.NODE_ENV === "production";
     const options = {
         httpOnly: true,
-        secure: true,
-        sameSite: "none"
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax"
     };
 
     res.cookie("ACCESS_TOKEN", accessToken, options);
@@ -358,4 +373,57 @@ const verifyEmail = asyncHandler(async (req, res) => {
     );
 });
 
-export { register, login, logout, getUsersForSidebar, googleAuth, addContact, getMe, updateProfile, verifyEmail }
+const blockUser = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const loggedInUserId = req.user._id;
+
+    if (userId === loggedInUserId.toString()) throw new ApiError(400, "You cannot block yourself");
+
+    const currentUser = await User.findById(loggedInUserId);
+    if (!currentUser) throw new ApiError(404, "User not found");
+
+    const alreadyBlocked = currentUser.blockedUsers.some(id => id.toString() === userId);
+    if (alreadyBlocked) throw new ApiError(400, "User is already blocked");
+
+    currentUser.blockedUsers.push(userId);
+    // DO NOT Remove from contacts when blocked so they appear in sidebar
+    await currentUser.save({ validateBeforeSave: false });
+
+    return res.status(200).json(new ApiResponse(200, {}, "User blocked successfully"));
+});
+
+const unblockUser = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const loggedInUserId = req.user._id;
+
+    const currentUser = await User.findById(loggedInUserId);
+    if (!currentUser) throw new ApiError(404, "User not found");
+
+    const wasBlocked = currentUser.blockedUsers.some(id => id.toString() === userId);
+    if (!wasBlocked) throw new ApiError(400, "User is not blocked");
+
+    currentUser.blockedUsers = currentUser.blockedUsers.filter(id => id.toString() !== userId);
+    await currentUser.save({ validateBeforeSave: false });
+
+    return res.status(200).json(new ApiResponse(200, {}, "User unblocked successfully"));
+});
+
+const muteUser = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const loggedInUserId = req.user._id;
+
+    const currentUser = await User.findById(loggedInUserId);
+    if (!currentUser) throw new ApiError(404, "User not found");
+
+    const isMuted = currentUser.mutedUsers.some(id => id.toString() === userId);
+    if (isMuted) {
+        currentUser.mutedUsers = currentUser.mutedUsers.filter(id => id.toString() !== userId);
+    } else {
+        currentUser.mutedUsers.push(userId);
+    }
+    await currentUser.save({ validateBeforeSave: false });
+
+    return res.status(200).json(new ApiResponse(200, { muted: !isMuted }, isMuted ? "User unmuted" : "User muted"));
+});
+
+export { register, login, logout, getUsersForSidebar, googleAuth, addContact, getMe, updateProfile, verifyEmail, blockUser, unblockUser, muteUser }

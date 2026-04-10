@@ -65,7 +65,15 @@ const userSchema = new mongoose.Schema({
     },
     verificationCodeExpires: {
         type: Date,
-    }
+    },
+    blockedUsers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+    }],
+    mutedUsers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+    }],
 
 }, { timestamps: true })
 

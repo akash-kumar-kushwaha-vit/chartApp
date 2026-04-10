@@ -65,9 +65,14 @@ export const updateGroupInfo = asyncHandler(async (req, res) => {
     const { groupId } = req.params;
     const { name, description } = req.body;
     let { avtar } = req.body;
+    const myId = req.user._id;
 
     const group = await Group.findById(groupId);
     if (!group) throw new ApiError(404, "Group not found");
+
+    if (!group.admins.includes(myId)) {
+        throw new ApiError(403, "Only admins can update group info");
+    }
 
     if (req.file) {
         const response = await uplodcloudinary(req.file.path);
@@ -142,4 +147,28 @@ export const getGroupDetails = asyncHandler(async (req, res) => {
     if (!group) throw new ApiError(404, "Group not found");
 
     return res.status(200).json(new ApiResponse(200, group, "Group details fetched successfully"));
+});
+
+export const assignAdmin = asyncHandler(async (req, res) => {
+    const { groupId, userId } = req.params;
+    const myId = req.user._id;
+
+    const group = await Group.findById(groupId);
+    if (!group) throw new ApiError(404, "Group not found");
+
+    if (!group.admins.includes(myId)) {
+        throw new ApiError(403, "Only admins can assign new admins");
+    }
+
+    if (!group.members.includes(userId)) {
+        throw new ApiError(400, "User is not a member of this group");
+    }
+
+    if (!group.admins.includes(userId)) {
+        group.admins.push(userId);
+        await group.save();
+        io.to(groupId).emit("groupUpdated", group);
+    }
+
+    return res.status(200).json(new ApiResponse(200, group, "Admin assigned successfully"));
 });
