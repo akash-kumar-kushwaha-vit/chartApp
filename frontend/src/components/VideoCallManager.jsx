@@ -11,6 +11,7 @@ const VideoCallManager = () => {
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null); // for voice-only calls
   
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -28,22 +29,33 @@ const VideoCallManager = () => {
   }, [localStream, callAccepted, isCalling]);
 
   useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
+    if (remoteStream) {
+      // Video call: attach to video element
+      if (isVideoCall && remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream;
+      }
+      // Voice call: attach to audio element so sound plays
+      if (!isVideoCall && remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStream;
+      }
     }
-  }, [remoteStream, callAccepted]);
+  }, [remoteStream, callAccepted, isVideoCall]);
 
   const toggleMute = () => {
     if (localStream) {
-      localStream.getAudioTracks()[0].enabled = isMuted;
-      setIsMuted(!isMuted);
+      const newMuted = !isMuted;
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) audioTrack.enabled = !newMuted; // enabled = opposite of muted
+      setIsMuted(newMuted);
     }
   };
 
   const toggleVideo = () => {
     if (localStream) {
-      localStream.getVideoTracks()[0].enabled = isVideoOff;
-      setIsVideoOff(!isVideoOff);
+      const newVideoOff = !isVideoOff;
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) videoTrack.enabled = !newVideoOff; // enabled = opposite of videoOff
+      setIsVideoOff(newVideoOff);
     }
   };
 
@@ -98,6 +110,11 @@ const VideoCallManager = () => {
     return (
       <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center animate-in fade-in duration-300">
         
+        {/* Hidden audio element for voice-only calls */}
+        {!isVideoCall && (
+          <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+        )}
+
         {/* Remote Video Background */}
         {callAccepted && remoteStream && isVideoCall ? (
           <video 
