@@ -11,8 +11,7 @@ const corsOptions = {
     allowedHeaders: ["Content-Type", "Authorization"],
 };
 
-app.use(cors(corsOptions));
-app.options("(.*)", cors(corsOptions)); // Handle preflight requests for all routes
+app.use(cors(corsOptions)); // also handles OPTIONS preflight automatically
 app.use(express.json({ limit: "10mb" }))
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static("public"))
