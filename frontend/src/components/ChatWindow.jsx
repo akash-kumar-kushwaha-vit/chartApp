@@ -54,14 +54,16 @@ const ChatWindow = () => {
     return url;
   };
 
-  const isOnline = onlineUsers.includes(selectedUser._id);
-  const isTyping = typingUserId === selectedUser._id;
+  const isOnline = !selectedUser.isGroup && onlineUsers.includes(selectedUser._id);
+  const isTyping = selectedUser.isGroup
+    ? typingUserId !== null   // For groups: someone in the group is typing
+    : typingUserId === selectedUser._id; // For 1-on-1: this specific user is typing
 
   // Initial Fetch & Search Fetch
   useEffect(() => {
     if (selectedUser) {
       setSkip(0);
-      getMessages(selectedUser._id, { skip: 0, limit: 50, search: searchQuery });
+      getMessages(selectedUser._id, { skip: 0, limit: 50, search: searchQuery }, selectedUser.isGroup);
     }
   }, [selectedUser._id, getMessages, searchQuery]);
 
@@ -72,7 +74,7 @@ const ChatWindow = () => {
         if (entries[0].isIntersecting && hasMoreMessages && !isMessagesLoading) {
           const newSkip = skip + 50;
           setSkip(newSkip);
-          getMessages(selectedUser._id, { skip: newSkip, limit: 50, search: searchQuery });
+          getMessages(selectedUser._id, { skip: newSkip, limit: 50, search: searchQuery }, selectedUser.isGroup);
         }
       },
       { threshold: 0.1 }

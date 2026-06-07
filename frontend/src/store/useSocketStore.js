@@ -41,13 +41,7 @@ export const useSocketStore = create((set, get) => ({
     });
 
     socket.on("newMessage", (newMessage) => {
-      const { selectedUser, messages, markMessagesAsRead, incrementUnreadCount } = useChatStore.getState();
-      
       const senderString = newMessage.senderId?._id || newMessage.senderId;
-      const isMessageForCurrentChat = selectedUser && (
-        (newMessage.groupId && selectedUser._id === newMessage.groupId) || 
-        (!newMessage.groupId && selectedUser._id === senderString)
-      );
 
       (async () => {
         let decryptedMsg = newMessage;
@@ -63,11 +57,22 @@ export const useSocketStore = create((set, get) => ({
           }
         }
 
+        // Read fresh state AFTER async decryption to avoid stale closure
+        const { selectedUser, messages, markMessagesAsRead, incrementUnreadCount } = useChatStore.getState();
+
+        const isMessageForCurrentChat = selectedUser && (
+          (newMessage.groupId && selectedUser._id === newMessage.groupId.toString()) ||
+          (!newMessage.groupId && selectedUser._id === senderString)
+        );
+
         if (isMessageForCurrentChat) {
           useChatStore.setState({ messages: [...messages, decryptedMsg] });
-          markMessagesAsRead(newMessage.groupId ? newMessage.groupId : senderString);
+          // Only mark as read for 1-on-1 chats (group read receipts not supported)
+          if (!newMessage.groupId) {
+            markMessagesAsRead(senderString);
+          }
         } else {
-          const badgeId = newMessage.groupId ? newMessage.groupId : senderString;
+          const badgeId = newMessage.groupId ? newMessage.groupId.toString() : senderString;
           incrementUnreadCount(badgeId);
 
           if (Notification.permission === "granted") {

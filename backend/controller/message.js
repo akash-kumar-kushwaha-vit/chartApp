@@ -60,12 +60,16 @@ export const getMessages = asyncHandler(async (req, res) => {
 });
 
 export const sendMessage = asyncHandler(async (req, res) => {
-    const { text, replyTo, isGroup, isForwarded, imageURL, videoURL, fileURL, fileNameStr, audioURL, iv, encryptionKeys } = req.body;
+    const { text, replyTo, isForwarded, imageURL, videoURL, fileURL, fileNameStr, audioURL, iv, encryptionKeys } = req.body;
     const { id: targetId } = req.params;
     const senderId = req.user._id;
 
+    // isGroup is sent as a URL query param (?isGroup=true) from the frontend,
+    // but fall back to req.body.isGroup for any other callers
+    const isGroupRaw = req.query.isGroup ?? req.body.isGroup;
+
     // Block enforcement (1-on-1 only)
-    const isGroupBoolean = isGroup === 'true' || isGroup === true;
+    const isGroupBoolean = isGroupRaw === 'true' || isGroupRaw === true;
     if (!isGroupBoolean) {
         const receiver = await User.findById(targetId).select("blockedUsers");
         if (receiver && receiver.blockedUsers.some(id => id.toString() === senderId.toString())) {

@@ -82,7 +82,7 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  getMessages: async (userId, pagination = { skip: 0, limit: 50, search: '' }) => {
+  getMessages: async (userId, pagination = { skip: 0, limit: 50, search: '' }, isGroupChat) => {
     if (pagination.skip === 0) set({ isMessagesLoading: true, hasMoreMessages: true });
     
     try {
@@ -92,13 +92,16 @@ export const useChatStore = create((set, get) => ({
       });
       if (pagination.search) queryParams.append("search", pagination.search);
       
+      // Use explicit isGroupChat param if provided, otherwise fall back to state
       const { selectedUser } = get();
-      if (selectedUser?.isGroup) {
+      const isGroup = isGroupChat !== undefined ? isGroupChat : selectedUser?.isGroup;
+      if (isGroup) {
         queryParams.append("isGroup", "true");
       }
 
       const res = await axiosInstance.get(`/messages/${userId}?${queryParams.toString()}`);
       let newMessages = res.data.data;
+      const rawCount = newMessages.length; // Capture before decryption
 
       const authUser = useAuthStore.getState().authUser;
       if (authUser) {
@@ -109,7 +112,7 @@ export const useChatStore = create((set, get) => ({
         messages: pagination.skip === 0 
           ? newMessages 
           : [...newMessages, ...state.messages], // Prepend older messages
-        hasMoreMessages: newMessages.length === pagination.limit
+        hasMoreMessages: rawCount === pagination.limit
       }));
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to fetch messages");
