@@ -104,7 +104,7 @@ const ChatWindow = () => {
 
   return (
     <div 
-      className="flex-1 flex flex-col h-full overflow-hidden relative"
+      className="flex-1 flex flex-col h-full overflow-hidden relative animate-slide-right"
       style={authUser?.chatWallpaper ? {
         backgroundImage: `url(${authUser.chatWallpaper})`,
         backgroundSize: 'cover',
@@ -122,11 +122,15 @@ const ChatWindow = () => {
          <div className="absolute inset-0 bg-[#efeae2]/50 dark:bg-[#0b141a]/80 pointer-events-none z-0" />
       )}
 
-      {/* Header */}
-      <div className="relative z-10 h-[59px] px-4 py-2 border-b border-[#d1d7db] dark:border-[#202c33] bg-[#f0f2f5] dark:bg-[#202c33] flex items-center shadow-sm w-full flex-shrink-0">
+      {/* Header — safe-area aware for notched phones */}
+      <div
+        className="relative z-10 px-2 sm:px-4 py-2 border-b border-[#d1d7db] dark:border-[#202c33] bg-[#f0f2f5] dark:bg-[#202c33] flex items-center shadow-sm w-full flex-shrink-0"
+        style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
+      >
         <div className="flex items-center gap-2 sm:gap-3 w-full">
+          {/* Back button — large tap target on mobile */}
           <button 
-            className="md:hidden p-1.5 sm:p-2 -ml-2 text-[#54656f] dark:text-[#aebac1] flex-shrink-0"
+            className="md:hidden -ml-1 w-11 h-11 flex items-center justify-center text-[#54656f] dark:text-[#aebac1] rounded-full active:bg-black/10 dark:active:bg-white/10 transition-colors flex-shrink-0"
             onClick={() => setSelectedUser(null)}
           >
             <ArrowLeft className="w-5 h-5" />

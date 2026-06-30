@@ -3,8 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <!-- Mobile-first viewport: prevent pinch zoom, fill entire screen -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <!-- PWA / Add to Home Screen -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Chat" />
+    <!-- Theme colour for Android Chrome address bar -->
+    <meta name="theme-color" content="#00a884" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#202c33" media="(prefers-color-scheme: dark)" />
+    <title>Chat App</title>
   </head>
   <body>
     <div id="root"></div>
